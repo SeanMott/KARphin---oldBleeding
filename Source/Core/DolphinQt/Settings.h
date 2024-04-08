@@ -30,6 +30,11 @@ class NetPlayClient;
 class NetPlayServer;
 }  // namespace NetPlay
 
+namespace NetPlay::CustomBackend
+{
+struct NetDriver;
+}
+
 class InputConfig;
 
 // UI settings to be stored in the config directory.
@@ -142,6 +147,8 @@ public:
   void ResetNetPlayClient(NetPlay::NetPlayClient* client = nullptr);
   std::shared_ptr<NetPlay::NetPlayServer> GetNetPlayServer();
   void ResetNetPlayServer(NetPlay::NetPlayServer* server = nullptr);
+  std::shared_ptr<NetPlay::CustomBackend::NetDriver> GetNetDriver();
+  void ResetNetDriver(NetPlay::CustomBackend::NetDriver* _netDriver = nullptr);
 
   // Cheats
   bool GetCheatsEnabled() const;
@@ -233,6 +240,7 @@ private:
   bool m_batch = false;
   std::shared_ptr<NetPlay::NetPlayClient> m_client;
   std::shared_ptr<NetPlay::NetPlayServer> m_server;
+  std::shared_ptr<NetPlay::CustomBackend::NetDriver> netDriver;
   ControllerInterface::HotplugCallbackHandle m_hotplug_callback_handle;
 };
 

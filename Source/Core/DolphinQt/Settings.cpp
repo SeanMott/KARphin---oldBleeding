@@ -1,6 +1,8 @@
 // Copyright 2015 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <Core/NetDriver.h>
+
 #include "DolphinQt/Settings.h"
 
 #include <atomic>
@@ -546,6 +548,15 @@ std::shared_ptr<NetPlay::NetPlayServer> Settings::GetNetPlayServer()
 void Settings::ResetNetPlayServer(NetPlay::NetPlayServer* server)
 {
   m_server.reset(server);
+}
+
+std::shared_ptr<NetPlay::CustomBackend::NetDriver> Settings::GetNetDriver()
+{
+  return netDriver;
+ }
+void Settings::ResetNetDriver(NetPlay::CustomBackend::NetDriver* _netDriver)
+{
+  netDriver.reset(_netDriver);
 }
 
 bool Settings::GetCheatsEnabled() const

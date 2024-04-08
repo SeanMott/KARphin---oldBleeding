@@ -241,8 +241,8 @@ void MenuBar::AddToolsMenu()
 
   tools_menu->addSeparator();
 
-  tools_menu->addAction(tr("Start &NetPlay..."), this, &MenuBar::StartNetPlay);
-  tools_menu->addAction(tr("Browse &NetPlay Sessions...."), this, &MenuBar::BrowseNetPlay);
+  tools_menu->addAction(tr("&Start Lobby"), this, &MenuBar::StartNetPlay);
+  tools_menu->addAction(tr("&Browse Lobbies"), this, &MenuBar::BrowseNetPlay);
 
   tools_menu->addSeparator();
 
@@ -330,34 +330,34 @@ void MenuBar::AddEmulationMenu()
   m_reset_action = emu_menu->addAction(tr("&Reset"), this, &MenuBar::Reset);
   m_fullscreen_action = emu_menu->addAction(tr("Toggle &Fullscreen"), this, &MenuBar::Fullscreen);
   m_frame_advance_action = emu_menu->addAction(tr("&Frame Advance"), this, &MenuBar::FrameAdvance);
-
+ 
   m_screenshot_action = emu_menu->addAction(tr("Take Screenshot"), this, &MenuBar::Screenshot);
-
+ 
   emu_menu->addSeparator();
-
+ 
   AddStateLoadMenu(emu_menu);
   AddStateSaveMenu(emu_menu);
   AddStateSlotMenu(emu_menu);
   UpdateStateSlotMenu();
-
+ 
   for (QMenu* menu : {m_state_load_menu, m_state_save_menu, m_state_slot_menu})
     connect(menu, &QMenu::aboutToShow, this, &MenuBar::UpdateStateSlotMenu);
 }
 
 void MenuBar::AddStateLoadMenu(QMenu* emu_menu)
 {
-  m_state_load_menu = emu_menu->addMenu(tr("&Load State"));
-  m_state_load_menu->addAction(tr("Load State from File"), this, &MenuBar::StateLoad);
-  m_state_load_menu->addAction(tr("Load State from Selected Slot"), this, &MenuBar::StateLoadSlot);
-  m_state_load_slots_menu = m_state_load_menu->addMenu(tr("Load State from Slot"));
-  m_state_load_menu->addAction(tr("Undo Load State"), this, &MenuBar::StateLoadUndo);
-
-  for (int i = 1; i <= 10; i++)
-  {
-    QAction* action = m_state_load_slots_menu->addAction(QString{});
-
-    connect(action, &QAction::triggered, this, [=, this]() { emit StateLoadSlotAt(i); });
-  }
+ m_state_load_menu = emu_menu->addMenu(tr("&Load State"));
+ m_state_load_menu->addAction(tr("Load State from File"), this, &MenuBar::StateLoad);
+ m_state_load_menu->addAction(tr("Load State from Selected Slot"), this, &MenuBar::StateLoadSlot);
+ m_state_load_slots_menu = m_state_load_menu->addMenu(tr("Load State from Slot"));
+ m_state_load_menu->addAction(tr("Undo Load State"), this, &MenuBar::StateLoadUndo);
+ 
+ for (int i = 1; i <= 10; i++)
+ {
+   QAction* action = m_state_load_slots_menu->addAction(QString{});
+ 
+   connect(action, &QAction::triggered, this, [=, this]() { emit StateLoadSlotAt(i); });
+ }
 }
 
 void MenuBar::AddStateSaveMenu(QMenu* emu_menu)
@@ -368,11 +368,11 @@ void MenuBar::AddStateSaveMenu(QMenu* emu_menu)
   m_state_save_menu->addAction(tr("Save State to Oldest Slot"), this, &MenuBar::StateSaveOldest);
   m_state_save_slots_menu = m_state_save_menu->addMenu(tr("Save State to Slot"));
   m_state_save_menu->addAction(tr("Undo Save State"), this, &MenuBar::StateSaveUndo);
-
+ 
   for (int i = 1; i <= 10; i++)
   {
     QAction* action = m_state_save_slots_menu->addAction(QString{});
-
+ 
     connect(action, &QAction::triggered, this, [=, this]() { emit StateSaveSlotAt(i); });
   }
 }
@@ -381,7 +381,7 @@ void MenuBar::AddStateSlotMenu(QMenu* emu_menu)
 {
   m_state_slot_menu = emu_menu->addMenu(tr("Select State Slot"));
   m_state_slots = new QActionGroup(this);
-
+ 
   for (int i = 1; i <= 10; i++)
   {
     QAction* action = m_state_slot_menu->addAction(QString{});
@@ -389,7 +389,7 @@ void MenuBar::AddStateSlotMenu(QMenu* emu_menu)
     action->setActionGroup(m_state_slots);
     if (Settings::Instance().GetStateSlot() == i)
       action->setChecked(true);
-
+ 
     connect(action, &QAction::triggered, this, [=, this]() { emit SetStateSlot(i); });
   }
 }
@@ -529,19 +529,19 @@ void MenuBar::AddViewMenu()
   AddShowRegionsMenu(view_menu);
 
   view_menu->addSeparator();
-  QAction* const purge_action =
-      view_menu->addAction(tr("Purge Game List Cache"), this, &MenuBar::PurgeGameListCache);
-  purge_action->setEnabled(false);
-  connect(&Settings::Instance(), &Settings::GameListRefreshRequested, purge_action,
-          [purge_action] { purge_action->setEnabled(false); });
-  connect(&Settings::Instance(), &Settings::GameListRefreshStarted, purge_action,
-          [purge_action] { purge_action->setEnabled(true); });
-  view_menu->addSeparator();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-  view_menu->addAction(tr("Search"), QKeySequence::Find, this, &MenuBar::ShowSearch);
-#else
-  view_menu->addAction(tr("Search"), this, &MenuBar::ShowSearch, QKeySequence::Find);
-#endif
+  //QAction* const purge_action =
+  //    view_menu->addAction(tr("Purge Game List Cache"), this, &MenuBar::PurgeGameListCache);
+  //purge_action->setEnabled(false);
+  //connect(&Settings::Instance(), &Settings::GameListRefreshRequested, purge_action,
+  //        [purge_action] { purge_action->setEnabled(false); });
+  //connect(&Settings::Instance(), &Settings::GameListRefreshStarted, purge_action,
+  //        [purge_action] { purge_action->setEnabled(true); });
+ // view_menu->addSeparator();
+//#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+//  view_menu->addAction(tr("Search"), QKeySequence::Find, this, &MenuBar::ShowSearch);
+//#else
+//  view_menu->addAction(tr("Search"), this, &MenuBar::ShowSearch, QKeySequence::Find);
+//#endif
 }
 
 void MenuBar::AddOptionsMenu()
@@ -583,41 +583,41 @@ void MenuBar::AddOptionsMenu()
 
 void MenuBar::InstallUpdateManually()
 {
-  const std::string autoupdate_track = Config::Get(Config::MAIN_AUTOUPDATE_UPDATE_TRACK);
-  const std::string manual_track = autoupdate_track.empty() ? "dev" : autoupdate_track;
-  auto* const updater = new Updater(this->parentWidget(), manual_track,
-                                    Config::Get(Config::MAIN_AUTOUPDATE_HASH_OVERRIDE));
-
-  updater->CheckForUpdate();
+ // const std::string autoupdate_track = Config::Get(Config::MAIN_AUTOUPDATE_UPDATE_TRACK);
+ // const std::string manual_track = autoupdate_track.empty() ? "dev" : autoupdate_track;
+ // auto* const updater = new Updater(this->parentWidget(), manual_track,
+ //                                   Config::Get(Config::MAIN_AUTOUPDATE_HASH_OVERRIDE));
+ //
+ // updater->CheckForUpdate();
 }
 
 void MenuBar::AddHelpMenu()
 {
   QMenu* help_menu = addMenu(tr("&Help"));
 
-  QAction* website = help_menu->addAction(tr("&Website"));
+  QAction* website = help_menu->addAction(tr("&Discord Netplay"));
   connect(website, &QAction::triggered, this,
-          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/"))); });
-  QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
-  connect(documentation, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
-  });
+          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("http://discord.gg/p3rGrcr"))); });
+ //QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
+ //connect(documentation, &QAction::triggered, this, []() {
+ //  QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
+ //});
   QAction* github = help_menu->addAction(tr("&GitHub Repository"));
   connect(github, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/dolphin-emu/dolphin")));
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/SeanMott/KARphin/tree/master")));
   });
-  QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
-  connect(bugtracker, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(
-        QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
-  });
+  //QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
+  //connect(bugtracker, &QAction::triggered, this, []() {
+  //  QDesktopServices::openUrl(
+  //      QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
+  //});
 
-  if (AutoUpdateChecker::SystemSupportsAutoUpdates())
-  {
-    help_menu->addSeparator();
-
-    help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
-  }
+ // if (AutoUpdateChecker::SystemSupportsAutoUpdates())
+ // {
+ //   help_menu->addSeparator();
+ //
+ //   help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
+ // }
 
 #ifndef __APPLE__
   help_menu->addSeparator();
@@ -649,23 +649,23 @@ void MenuBar::AddGameListTypeSection(QMenu* view_menu)
 void MenuBar::AddListColumnsMenu(QMenu* view_menu)
 {
   static const QMap<QString, const Config::Info<bool>*> columns{
-      {tr("Platform"), &Config::MAIN_GAMELIST_COLUMN_PLATFORM},
+      {tr("Mod Kind"), &Config::MAIN_GAMELIST_COLUMN_PLATFORM},
       {tr("Banner"), &Config::MAIN_GAMELIST_COLUMN_BANNER},
       {tr("Title"), &Config::MAIN_GAMELIST_COLUMN_TITLE},
       {tr("Description"), &Config::MAIN_GAMELIST_COLUMN_DESCRIPTION},
-      {tr("Maker"), &Config::MAIN_GAMELIST_COLUMN_MAKER},
-      {tr("File Name"), &Config::MAIN_GAMELIST_COLUMN_FILE_NAME},
-      {tr("File Path"), &Config::MAIN_GAMELIST_COLUMN_FILE_PATH},
-      {tr("Game ID"), &Config::MAIN_GAMELIST_COLUMN_GAME_ID},
-      {tr("Region"), &Config::MAIN_GAMELIST_COLUMN_REGION},
-      {tr("File Size"), &Config::MAIN_GAMELIST_COLUMN_FILE_SIZE},
-      {tr("File Format"), &Config::MAIN_GAMELIST_COLUMN_FILE_FORMAT},
-      {tr("Block Size"), &Config::MAIN_GAMELIST_COLUMN_BLOCK_SIZE},
-      {tr("Compression"), &Config::MAIN_GAMELIST_COLUMN_COMPRESSION},
-      {tr("Tags"), &Config::MAIN_GAMELIST_COLUMN_TAGS}};
+      {tr("Maker"), &Config::MAIN_GAMELIST_COLUMN_MAKER}};
+      //{tr("File Name"), &Config::MAIN_GAMELIST_COLUMN_FILE_NAME},
+      //{tr("File Path"), &Config::MAIN_GAMELIST_COLUMN_FILE_PATH},
+      //{tr("Game ID"), &Config::MAIN_GAMELIST_COLUMN_GAME_ID},
+      //{tr("Region"), &Config::MAIN_GAMELIST_COLUMN_REGION},
+      //{tr("File Size"), &Config::MAIN_GAMELIST_COLUMN_FILE_SIZE},
+      //{tr("File Format"), &Config::MAIN_GAMELIST_COLUMN_FILE_FORMAT},
+      //{tr("Block Size"), &Config::MAIN_GAMELIST_COLUMN_BLOCK_SIZE},
+      //{tr("Compression"), &Config::MAIN_GAMELIST_COLUMN_COMPRESSION},
+      //{tr("Tags"), &Config::MAIN_GAMELIST_COLUMN_TAGS}};
 
   QActionGroup* column_group = new QActionGroup(this);
-  m_cols_menu = view_menu->addMenu(tr("List Columns"));
+  m_cols_menu = view_menu->addMenu(tr("List Mod Properties"));
   column_group->setExclusive(false);
 
   for (const auto& key : columns.keys())
@@ -683,48 +683,48 @@ void MenuBar::AddListColumnsMenu(QMenu* view_menu)
 
 void MenuBar::AddShowPlatformsMenu(QMenu* view_menu)
 {
-  static const QMap<QString, const Config::Info<bool>*> platform_map{
-      {tr("Show Wii"), &Config::MAIN_GAMELIST_LIST_WII},
-      {tr("Show GameCube"), &Config::MAIN_GAMELIST_LIST_GC},
-      {tr("Show WAD"), &Config::MAIN_GAMELIST_LIST_WAD},
-      {tr("Show ELF/DOL"), &Config::MAIN_GAMELIST_LIST_ELF_DOL}};
-
-  QActionGroup* platform_group = new QActionGroup(this);
-  QMenu* plat_menu = view_menu->addMenu(tr("Show Platforms"));
-  platform_group->setExclusive(false);
-
-  for (const auto& key : platform_map.keys())
-  {
-    const Config::Info<bool>* const config = platform_map[key];
-    QAction* action = platform_group->addAction(plat_menu->addAction(key));
-    action->setCheckable(true);
-    action->setChecked(Config::Get(*config));
-    connect(action, &QAction::toggled, [this, config, key](bool value) {
-      Config::SetBase(*config, value);
-      emit GameListPlatformVisibilityToggled(key, value);
-    });
-  }
+  //static const QMap<QString, const Config::Info<bool>*> platform_map{
+  //    {tr("Show Wii"), &Config::MAIN_GAMELIST_LIST_WII},
+  //    {tr("Show GameCube"), &Config::MAIN_GAMELIST_LIST_GC},
+  //    {tr("Show WAD"), &Config::MAIN_GAMELIST_LIST_WAD},
+  //    {tr("Show ELF/DOL"), &Config::MAIN_GAMELIST_LIST_ELF_DOL}};
+  //
+  //QActionGroup* platform_group = new QActionGroup(this);
+  //QMenu* plat_menu = view_menu->addMenu(tr("Show Platforms"));
+  //platform_group->setExclusive(false);
+  //
+  //for (const auto& key : platform_map.keys())
+  //{
+  //  const Config::Info<bool>* const config = platform_map[key];
+  //  QAction* action = platform_group->addAction(plat_menu->addAction(key));
+  //  action->setCheckable(true);
+  //  action->setChecked(Config::Get(*config));
+  //  connect(action, &QAction::toggled, [this, config, key](bool value) {
+  //    Config::SetBase(*config, value);
+  //    emit GameListPlatformVisibilityToggled(key, value);
+  //  });
+  //}
 }
 
 void MenuBar::AddShowRegionsMenu(QMenu* view_menu)
 {
   static const QMap<QString, const Config::Info<bool>*> region_map{
-      {tr("Show JPN"), &Config::MAIN_GAMELIST_LIST_JPN},
-      {tr("Show PAL"), &Config::MAIN_GAMELIST_LIST_PAL},
-      {tr("Show USA"), &Config::MAIN_GAMELIST_LIST_USA},
-      {tr("Show Australia"), &Config::MAIN_GAMELIST_LIST_AUSTRALIA},
-      {tr("Show France"), &Config::MAIN_GAMELIST_LIST_FRANCE},
-      {tr("Show Germany"), &Config::MAIN_GAMELIST_LIST_GERMANY},
-      {tr("Show Italy"), &Config::MAIN_GAMELIST_LIST_ITALY},
-      {tr("Show Korea"), &Config::MAIN_GAMELIST_LIST_KOREA},
-      {tr("Show Netherlands"), &Config::MAIN_GAMELIST_LIST_NETHERLANDS},
-      {tr("Show Russia"), &Config::MAIN_GAMELIST_LIST_RUSSIA},
-      {tr("Show Spain"), &Config::MAIN_GAMELIST_LIST_SPAIN},
-      {tr("Show Taiwan"), &Config::MAIN_GAMELIST_LIST_TAIWAN},
-      {tr("Show World"), &Config::MAIN_GAMELIST_LIST_WORLD},
-      {tr("Show Unknown"), &Config::MAIN_GAMELIST_LIST_UNKNOWN}};
+      {tr("Show Texture Mods"), &Config::MAIN_GAMELIST_LIST_JPN},
+      {tr("Show Model Mods"), &Config::MAIN_GAMELIST_LIST_PAL},
+      {tr("Show Animation Mods"), &Config::MAIN_GAMELIST_LIST_USA},
+      {tr("Show Ride Mods"), &Config::MAIN_GAMELIST_LIST_AUSTRALIA},
+      {tr("Show Event Mods"), &Config::MAIN_GAMELIST_LIST_FRANCE},
+      {tr("Show Power Up Mods"), &Config::MAIN_GAMELIST_LIST_GERMANY},
+      {tr("Show Map Mods"), &Config::MAIN_GAMELIST_LIST_ITALY},
+      {tr("Show Mod Pack"), &Config::MAIN_GAMELIST_LIST_KOREA},
+      {tr("Show Audio Mods"), &Config::MAIN_GAMELIST_LIST_NETHERLANDS},
+      {tr("Show Gekko Codes"), &Config::MAIN_GAMELIST_LIST_RUSSIA}};
+      //{tr("Show Spain"), &Config::MAIN_GAMELIST_LIST_SPAIN},
+      //{tr("Show Taiwan"), &Config::MAIN_GAMELIST_LIST_TAIWAN},
+      //{tr("Show World"), &Config::MAIN_GAMELIST_LIST_WORLD},
+      //{tr("Show Unknown"), &Config::MAIN_GAMELIST_LIST_UNKNOWN}};
 
-  QMenu* const region_menu = view_menu->addMenu(tr("Show Regions"));
+  QMenu* const region_menu = view_menu->addMenu(tr("Show Mods"));
   const QAction* const show_all_regions = region_menu->addAction(tr("Show All"));
   const QAction* const hide_all_regions = region_menu->addAction(tr("Hide All"));
   region_menu->addSeparator();

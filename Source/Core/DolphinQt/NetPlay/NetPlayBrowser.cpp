@@ -29,10 +29,21 @@
 #include "DolphinQt/QtUtils/SetWindowDecorations.h"
 #include "DolphinQt/Settings.h"
 
+#include <Core/NetDriver.h>
+
 NetPlayBrowser::NetPlayBrowser(QWidget* parent) : QDialog(parent)
 {
   setWindowTitle(tr("NetPlay Session Browser"));
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
+  // checks if steam is initalized
+  if (!Settings::Instance().GetNetDriver()->isSteamInitalized)
+  {
+    ModalMessageBox::information(this, tr("Net Play Error"),
+                                 tr("Steam Networking failed to initalized. Make sure Steam is "
+                                    "running before starting netplay."));
+    return;
+  }
 
   CreateWidgets();
   RestoreSettings();

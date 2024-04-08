@@ -13,6 +13,32 @@ static constexpr u16 DEFAULT_LISTEN_PORT = 2626;
 
 // Main.NetPlay
 
+//defines configs about net play
+std::string CONFIG_SETTING_USER_NICKNAME = "";
+
+std::string CONFIG_SETTING_LOBBY_NAME = "";
+std::string CONFIG_SETTING_LOBBY_DESC = "";
+
+u8 CONFIG_SETTING_LOBBY_MAX_PLAYER_COUNT = 2;
+
+std::string CONFIG_SETTING_LOBBY_REGION = "";
+
+std::string CONFIG_SETTING_LOBBY_PASSWORD = "";
+bool CONFIG_SETTING_LOBBY_PASSWORD_IS_ENABLED = false;
+
+u16 CONFIG_SETTING_LOBBY_HOST_PORT = 4226;
+u16 CONFIG_SETTING_LOBBY_CLIENT_PORT = 4226;
+
+NetPlay::CustomBackend::KAR_GameMode CONFIG_SETTING_GAME_MODE =
+    NetPlay::CustomBackend::KAR_GameMode::City_Trial;
+NetPlay::CustomBackend::KAR_GameCatagory CONFIG_SETTING_GAME_CATAGORY =
+    NetPlay::CustomBackend::KAR_GameCatagory::Ranked;
+std::string CONFIG_SETTING_GAME_ROM_NAME = "";
+
+ CSteamID CONFIG_SETTING_LOBBY_STEAM_ID;
+
+//mods
+
 const Info<std::string> NETPLAY_TRAVERSAL_SERVER{{System::Main, "NetPlay", "TraversalServer"},
                                                  "stun.dolphin-emu.org"};
 const Info<u16> NETPLAY_TRAVERSAL_PORT{{System::Main, "NetPlay", "TraversalPort"}, 6262};
