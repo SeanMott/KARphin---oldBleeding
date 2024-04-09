@@ -15,8 +15,6 @@
 #include "DolphinQt/GameList/GameListModel.h"
 #include "VideoCommon/OnScreenDisplay.h"
 
-#include <Core/NetDriver.h>
-
 class BootSessionData;
 class ChunkedProgressDialog;
 class GameDigestDialog;
@@ -44,7 +42,7 @@ public:
                          StartGameCallback start_game_callback, QWidget* parent = nullptr);
   ~NetPlayDialog();
 
-  void show(std::string nickname);
+  void show(std::string nickname, bool use_traversal);
   void reject() override;
 
   // NetPlayUI methods
@@ -112,7 +110,7 @@ private:
   void OnStart();
   void DisplayMessage(const QString& msg, const std::string& color,
                       int duration = OSD::Duration::NORMAL);
-  //void ResetExternalIP();
+  void ResetExternalIP();
   void UpdateDiscordPresence();
   void UpdateGUI();
   void GameStatusChanged(bool running);
@@ -129,8 +127,8 @@ private:
   // Players
   QGroupBox* m_players_box;
   QComboBox* m_room_box;
-  //QLabel* m_hostcode_label;
-  //QPushButton* m_hostcode_action_button;
+  QLabel* m_hostcode_label;
+  QPushButton* m_hostcode_action_button;
   QTableWidget* m_players_list;
   QPushButton* m_kick_button;
   QPushButton* m_assign_ports_button;
@@ -150,7 +148,7 @@ private:
   QAction* m_savedata_none_action;
   QAction* m_savedata_load_only_action;
   QAction* m_savedata_load_and_write_action;
-  //QAction* m_savedata_all_wii_saves_action;
+  QAction* m_savedata_all_wii_saves_action;
 
   QAction* m_sync_codes_action;
   QAction* m_record_input_action;
@@ -159,7 +157,7 @@ private:
   QAction* m_golf_mode_action;
   QAction* m_golf_mode_overlay_action;
   QAction* m_fixed_delay_action;
-  //QAction* m_hide_remote_gbas_action;
+  QAction* m_hide_remote_gbas_action;
   QPushButton* m_quit_button;
   QSplitter* m_splitter;
   QActionGroup* m_network_mode_group;
@@ -170,7 +168,7 @@ private:
   PadMappingDialog* m_pad_mapping;
   NetPlay::SyncIdentifier m_current_game_identifier;
   std::string m_current_game_name;
-  //Common::Lazy<std::string> m_external_ip_address;
+  Common::Lazy<std::string> m_external_ip_address;
   std::string m_nickname;
   const GameListModel& m_game_list_model;
   bool m_use_traversal = false;

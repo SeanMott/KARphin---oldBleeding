@@ -64,7 +64,6 @@
 #include "Core/NetPlayClient.h"
 #include "Core/NetPlayProto.h"
 #include "Core/NetPlayServer.h"
-#include "Core/NetDriver.h"
 #include "Core/State.h"
 #include "Core/System.h"
 #include "Core/WiiUtils.h"
@@ -145,8 +144,6 @@
 // This #define within X11/X.h conflicts with our WiimoteSource enum.
 #undef None
 #endif
-
-#include <steam/steam_api.h>
 
 #if defined(__unix__) || defined(__unix) || defined(__APPLE__)
 void MainWindow::OnSignal()
@@ -276,7 +273,7 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters,
   if (boot_parameters)
   {
     m_pending_boot = std::move(boot_parameters);
- 
+
     if (!movie_path.empty())
     {
       std::optional<std::string> savestate_path;
@@ -300,7 +297,7 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters,
   m_render_widget_geometry = settings.value(QStringLiteral("renderwidget/geometry")).toByteArray();
 
   // Restoring of window states can sometimes go wrong, resulting in widgets being visible when they
- //  shouldn't be so we have to reapply all our rules afterwards.
+  // shouldn't be so we have to reapply all our rules afterwards.
   Settings::Instance().RefreshWidgetVisibility();
 
   if (!ResourcePack::Init())
@@ -308,7 +305,7 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters,
     ModalMessageBox::critical(this, tr("Error"),
                               tr("Error occurred while loading some texture packs"));
   }
-  
+
   for (auto& pack : ResourcePack::GetPacks())
   {
     if (!pack.IsValid())
@@ -320,7 +317,7 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters,
       return;
     }
   }
-  
+
   Host::GetInstance()->SetMainWindowHandle(reinterpret_cast<void*>(winId()));
 }
 
@@ -329,32 +326,31 @@ MainWindow::~MainWindow()
   // Shut down NetPlay first to avoid race condition segfault
   Settings::Instance().ResetNetPlayClient();
   Settings::Instance().ResetNetPlayServer();
-  Settings::Instance().ResetNetDriver();
 
 #ifdef USE_RETRO_ACHIEVEMENTS
   AchievementManager::GetInstance().Shutdown();
 #endif  // USE_RETRO_ACHIEVEMENTS
 
- delete m_render_widget;
- delete m_netplay_dialog;
- 
- for (int i = 0; i < 4; i++)
- {
-   delete m_gc_tas_input_windows[i];
-   delete m_gba_tas_input_windows[i];
-   delete m_wii_tas_input_windows[i];
- }
+  delete m_render_widget;
+  delete m_netplay_dialog;
 
- ShutdownControllers();
+  for (int i = 0; i < 4; i++)
+  {
+    delete m_gc_tas_input_windows[i];
+    delete m_gba_tas_input_windows[i];
+    delete m_wii_tas_input_windows[i];
+  }
 
- QSettings& settings = Settings::GetQSettings();
- 
- settings.setValue(QStringLiteral("mainwindow/state"), saveState());
- settings.setValue(QStringLiteral("mainwindow/geometry"), saveGeometry());
- 
- settings.setValue(QStringLiteral("renderwidget/geometry"), m_render_widget_geometry);
- 
- Config::Save();
+  ShutdownControllers();
+
+  QSettings& settings = Settings::GetQSettings();
+
+  settings.setValue(QStringLiteral("mainwindow/state"), saveState());
+  settings.setValue(QStringLiteral("mainwindow/geometry"), saveGeometry());
+
+  settings.setValue(QStringLiteral("renderwidget/geometry"), m_render_widget_geometry);
+
+  Config::Save();
 }
 
 WindowSystemInfo MainWindow::GetWindowSystemInfo() const
@@ -1173,8 +1169,6 @@ void MainWindow::SetFullScreenResolution(bool fullscreen)
 
 void MainWindow::ShowRenderWidget()
 {
-  
-
   SetFullScreenResolution(false);
   Host::GetInstance()->SetRenderFullscreen(false);
 
@@ -1392,7 +1386,6 @@ void MainWindow::ShowSkylanderPortal()
   m_skylander_window->activateWindow();
 }
 
-
 void MainWindow::ShowInfinityBase()
 {
   if (!m_infinity_window)
@@ -1514,10 +1507,6 @@ void MainWindow::NetPlayInit()
   Settings::Instance().SetSystemDark(true);
   Settings::Instance().ApplyStyle();
 
-  // create net driver
-  Settings::Instance().ResetNetDriver(new NetPlay::CustomBackend::NetDriver());
-
-  //gets the list of ROMs
   const auto& game_list_model = m_game_list->GetGameListModel();
   m_netplay_setup_dialog = new NetPlaySetupDialog(game_list_model, this);
   m_netplay_dialog = new NetPlayDialog(
@@ -1531,7 +1520,7 @@ void MainWindow::NetPlayInit()
 
   connect(m_netplay_dialog, &NetPlayDialog::Stop, this, &MainWindow::ForceStop);
   connect(m_netplay_dialog, &NetPlayDialog::rejected, this, &MainWindow::NetPlayQuit);
-  //connect(m_netplay_browser_dialog, &NetPlayBrowser::Join, this, &MainWindow::NetPlayJoin);
+  connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Join, this, &MainWindow::NetPlayJoin);
   connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Host, this, &MainWindow::NetPlayHost);
 #ifdef USE_DISCORD_PRESENCE
   connect(m_netplay_discord, &DiscordHandler::Join, this, &MainWindow::NetPlayJoin);
@@ -1543,8 +1532,6 @@ void MainWindow::NetPlayInit()
           &MainWindow::UpdateScreenSaverInhibition);
   connect(&Settings::Instance(), &Settings::EmulationStateChanged, this,
           &MainWindow::UpdateScreenSaverInhibition);
-
-  //inits the net driver
 }
 
 bool MainWindow::NetPlayJoin()
@@ -1563,56 +1550,53 @@ bool MainWindow::NetPlayJoin()
     return false;
   }
 
-  //create net driver
- // Settings::Instance().ResetNetDriver(new NetPlay::CustomBackend::NetDriver());
-
-  //auto server = Settings::Instance().GetNetPlayServer();
+  auto server = Settings::Instance().GetNetPlayServer();
 
   // Settings
-  //const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
-  //const bool is_traversal = traversal_choice == "traversal";
+  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = traversal_choice == "traversal";
 
-  //std::string host_ip;
-  //u16 host_port;
-  //if (server)
-  //{
-  //  host_ip = "127.0.0.1";
-  //  host_port = server->GetPort();
-  //}
-  //else
-  //{
-  //  host_ip = is_traversal ? Config::Get(Config::NETPLAY_HOST_CODE) :
-  //                           Config::Get(Config::NETPLAY_ADDRESS);
-  //  host_port = Config::Get(Config::NETPLAY_CONNECT_PORT);
-  //}
+  std::string host_ip;
+  u16 host_port;
+  if (server)
+  {
+    host_ip = "127.0.0.1";
+    host_port = server->GetPort();
+  }
+  else
+  {
+    host_ip = is_traversal ? Config::Get(Config::NETPLAY_HOST_CODE) :
+                             Config::Get(Config::NETPLAY_ADDRESS);
+    host_port = Config::Get(Config::NETPLAY_CONNECT_PORT);
+  }
 
- // const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
- // const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
- // const std::string nickname = Config::Get(Config::NETPLAY_NICKNAME);
- // const std::string network_mode = Config::Get(Config::NETPLAY_NETWORK_MODE);
-  //const bool host_input_authority = network_mode == "hostinputauthority" || network_mode == "golf";
+  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const std::string nickname = Config::Get(Config::NETPLAY_NICKNAME);
+  const std::string network_mode = Config::Get(Config::NETPLAY_NETWORK_MODE);
+  const bool host_input_authority = network_mode == "hostinputauthority" || network_mode == "golf";
 
- // if (server)
-  //{
-  //  server->SetHostInputAuthority(host_input_authority);
-  //  server->AdjustPadBufferSize(Config::Get(Config::NETPLAY_BUFFER_SIZE));
- // }
+  if (server)
+  {
+    server->SetHostInputAuthority(host_input_authority);
+    server->AdjustPadBufferSize(Config::Get(Config::NETPLAY_BUFFER_SIZE));
+  }
 
   // Create Client
- // const bool is_hosting_netplay = server != nullptr;
- // Settings::Instance().ResetNetPlayClient(new NetPlay::NetPlayClient(
- //     host_ip, host_port, m_netplay_dialog, nickname,
- //     NetPlay::NetTraversalConfig{is_hosting_netplay ? false : is_traversal, traversal_host,
- //                                 traversal_port}));
+  const bool is_hosting_netplay = server != nullptr;
+  Settings::Instance().ResetNetPlayClient(new NetPlay::NetPlayClient(
+      host_ip, host_port, m_netplay_dialog, nickname,
+      NetPlay::NetTraversalConfig{is_hosting_netplay ? false : is_traversal, traversal_host,
+                                  traversal_port}));
 
-  //if (!Settings::Instance().GetNetPlayClient()->IsConnected())
-  //{
-  //  NetPlayQuit();
-  //  return false;
-  //}
+  if (!Settings::Instance().GetNetPlayClient()->IsConnected())
+  {
+    NetPlayQuit();
+    return false;
+  }
 
   m_netplay_setup_dialog->close();
-  m_netplay_dialog->show(Config::CONFIG_SETTING_USER_NICKNAME);
+  m_netplay_dialog->show(nickname, is_traversal);
 
   return true;
 }
@@ -1634,59 +1618,45 @@ bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
   }
 
   // Settings
-  //u16 host_port = Config::Get(Config::NETPLAY_HOST_PORT);
-  //const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
-  //const bool is_traversal = traversal_choice == "traversal";
-  //const bool use_upnp = Config::Get(Config::NETPLAY_USE_UPNP);
-  //
-  //const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
-  //const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
-  //const u16 traversal_port_alt = Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
+  u16 host_port = Config::Get(Config::NETPLAY_HOST_PORT);
+  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = traversal_choice == "traversal";
+  const bool use_upnp = Config::Get(Config::NETPLAY_USE_UPNP);
 
-  //if (is_traversal)
-  //  host_port = Config::Get(Config::NETPLAY_LISTEN_PORT);
+  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const u16 traversal_port_alt = Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
 
-  
+  if (is_traversal)
+    host_port = Config::Get(Config::NETPLAY_LISTEN_PORT);
 
   // Create Server
-  //Settings::Instance().ResetNetPlayServer(
-   //   new NetPlay::NetPlayServer(host_port, use_upnp, m_netplay_dialog,
-    //                             NetPlay::NetTraversalConfig{is_traversal, traversal_host,
-      //                                                       traversal_port, traversal_port_alt}));
+  Settings::Instance().ResetNetPlayServer(
+      new NetPlay::NetPlayServer(host_port, use_upnp, m_netplay_dialog,
+                                 NetPlay::NetTraversalConfig{is_traversal, traversal_host,
+                                                             traversal_port, traversal_port_alt}));
 
-  // starts the server and creates a lobby
-  if (!Settings::Instance().GetNetDriver()->StartHosting())
+  if (!Settings::Instance().GetNetPlayServer()->is_connected)
   {
     ModalMessageBox::critical(
-        nullptr, tr("Failed to start server"),
+        nullptr, tr("Failed to open server"),
         tr("Failed to listen on port %1. Is another instance of the NetPlay server running?")
-            .arg(Config::CONFIG_SETTING_LOBBY_HOST_PORT));
+            .arg(host_port));
     NetPlayQuit();
     return false;
   }
 
-  //Settings::Instance().GetNetPlayServer()->ChangeGame(game.GetSyncIdentifier(),
-                                               //       m_game_list->GetNetPlayName(game));
+  Settings::Instance().GetNetPlayServer()->ChangeGame(game.GetSyncIdentifier(),
+                                                      m_game_list->GetNetPlayName(game));
 
-  //update the data in the lobby what game is being played
-  Settings::Instance().GetNetDriver()->ChangeGame(game.GetSyncIdentifier(),
-                                                  m_game_list->GetNetPlayName(game));
-
-  //closes old window, opens main window
-  m_netplay_setup_dialog->close();
-  m_netplay_dialog->show(Config::CONFIG_SETTING_USER_NICKNAME);// nickname, is_traversal);
-
-  //no need to join the local server since it's all handled by the net driver
   // Join our local server
-  //return NetPlayJoin();
-  return true;
+  return NetPlayJoin();
 }
 
 void MainWindow::NetPlayQuit()
 {
   Settings::Instance().ResetNetPlayClient();
   Settings::Instance().ResetNetPlayServer();
-  Settings::Instance().ResetNetDriver();
 #ifdef USE_DISCORD_PRESENCE
   Discord::UpdateDiscordPresence();
 #endif
@@ -2102,9 +2072,6 @@ void MainWindow::ShowRiivolutionBootWidget(const UICommon::GameFile& game)
 
 void MainWindow::Show()
 {
-  // hyjack the update to call steam callbacks
-  SteamAPI_RunCallbacks();
-  
   if (!Settings::Instance().IsBatchModeEnabled())
   {
     SetQWidgetWindowDecorations(this);

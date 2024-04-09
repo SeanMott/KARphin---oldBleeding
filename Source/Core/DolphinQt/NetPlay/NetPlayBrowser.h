@@ -15,8 +15,6 @@
 #include "Common/Flag.h"
 #include "UICommon/NetPlayIndex.h"
 
-#include <Core/NetDriver.h>
-
 class QCheckBox;
 class QComboBox;
 class QDialogButtonBox;

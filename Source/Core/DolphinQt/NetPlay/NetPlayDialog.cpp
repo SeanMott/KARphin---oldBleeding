@@ -64,10 +64,6 @@
 #include "VideoCommon/NetPlayGolfUI.h"
 #include "VideoCommon/VideoConfig.h"
 
-//Steam includes
-#include <steam/steam_api.h>
-#include <steam/isteammatchmaking.h>
-
 namespace
 {
 QString InetAddressToString(const Common::TraversalInetAddress& addr)
@@ -107,7 +103,7 @@ NetPlayDialog::NetPlayDialog(const GameListModel& game_list_model,
   m_game_digest_dialog = new GameDigestDialog(this);
   m_chunked_progress_dialog = new ChunkedProgressDialog(this);
 
-  //ResetExternalIP();
+  ResetExternalIP();
   CreateChatLayout();
   CreatePlayersLayout();
   CreateMainLayout();
@@ -166,13 +162,13 @@ void NetPlayDialog::CreateMainLayout()
 
   m_data_menu->addSeparator();
 
-  //m_savedata_all_wii_saves_action = m_data_menu->addAction(tr("Use All Wii Save Data"));
-  //m_savedata_all_wii_saves_action->setToolTip(tr(
-  //    "If checked, all Wii saves will be used instead of only the save of the game being started. "
-  //    "Useful when switching games mid-session. Has no effect if No Save Data is selected."));
-  //m_savedata_all_wii_saves_action->setCheckable(true);
-  //
-  //m_data_menu->addSeparator();
+  m_savedata_all_wii_saves_action = m_data_menu->addAction(tr("Use All Wii Save Data"));
+  m_savedata_all_wii_saves_action->setToolTip(tr(
+      "If checked, all Wii saves will be used instead of only the save of the game being started. "
+      "Useful when switching games mid-session. Has no effect if No Save Data is selected."));
+  m_savedata_all_wii_saves_action->setCheckable(true);
+
+  m_data_menu->addSeparator();
 
   m_sync_codes_action = m_data_menu->addAction(tr("Sync AR/Gecko Codes"));
   m_sync_codes_action->setCheckable(true);
@@ -212,30 +208,30 @@ void NetPlayDialog::CreateMainLayout()
   m_fixed_delay_action->setChecked(true);
 
   m_game_digest_menu = m_menu_bar->addMenu(tr("Checksum"));
-  //m_game_digest_menu->addAction(tr("Current game"), this, [this] {
-  //  Settings::Instance().GetNetPlayServer()->ComputeGameDigest(m_current_game_identifier);
-  //});
-  //m_game_digest_menu->addAction(tr("Other game..."), this, [this] {
-  //  GameListDialog gld(m_game_list_model, this);
-  //
-  //  SetQWidgetWindowDecorations(&gld);
-  //  if (gld.exec() != QDialog::Accepted)
-  //    return;
-  //  Settings::Instance().GetNetPlayServer()->ComputeGameDigest(
-  //      gld.GetSelectedGame().GetSyncIdentifier());
-  //});
-  //m_game_digest_menu->addAction(tr("SD Card"), this, [] {
-  //  Settings::Instance().GetNetPlayServer()->ComputeGameDigest(
-  //      NetPlay::NetPlayClient::GetSDCardIdentifier());
-  //});
+  m_game_digest_menu->addAction(tr("Current game"), this, [this] {
+    Settings::Instance().GetNetPlayServer()->ComputeGameDigest(m_current_game_identifier);
+  });
+  m_game_digest_menu->addAction(tr("Other game..."), this, [this] {
+    GameListDialog gld(m_game_list_model, this);
+
+    SetQWidgetWindowDecorations(&gld);
+    if (gld.exec() != QDialog::Accepted)
+      return;
+    Settings::Instance().GetNetPlayServer()->ComputeGameDigest(
+        gld.GetSelectedGame().GetSyncIdentifier());
+  });
+  m_game_digest_menu->addAction(tr("SD Card"), this, [] {
+    Settings::Instance().GetNetPlayServer()->ComputeGameDigest(
+        NetPlay::NetPlayClient::GetSDCardIdentifier());
+  });
 
   m_other_menu = m_menu_bar->addMenu(tr("Other"));
   m_record_input_action = m_other_menu->addAction(tr("Record Inputs"));
   m_record_input_action->setCheckable(true);
   m_golf_mode_overlay_action = m_other_menu->addAction(tr("Show Golf Mode Overlay"));
   m_golf_mode_overlay_action->setCheckable(true);
-  //m_hide_remote_gbas_action = m_other_menu->addAction(tr("Hide Remote GBAs"));
- // m_hide_remote_gbas_action->setCheckable(true);
+  m_hide_remote_gbas_action = m_other_menu->addAction(tr("Hide Remote GBAs"));
+  m_hide_remote_gbas_action->setCheckable(true);
 
   m_game_button->setDefault(false);
   m_game_button->setAutoDefault(false);
@@ -292,8 +288,8 @@ void NetPlayDialog::CreatePlayersLayout()
 {
   m_players_box = new QGroupBox(tr("Players"));
   m_room_box = new QComboBox;
- // m_hostcode_label = new QLabel;
- // m_hostcode_action_button = new QPushButton(tr("Copy"));
+  m_hostcode_label = new QLabel;
+  m_hostcode_action_button = new QPushButton(tr("Copy"));
   m_players_list = new QTableWidget;
   m_kick_button = new QPushButton(tr("Kick Player"));
   m_assign_ports_button = new QPushButton(tr("Assign Controller Ports"));
@@ -311,8 +307,8 @@ void NetPlayDialog::CreatePlayersLayout()
   auto* layout = new QGridLayout;
 
   layout->addWidget(m_room_box, 0, 0);
-  //layout->addWidget(m_hostcode_label, 0, 1);
-  //layout->addWidget(m_hostcode_action_button, 0, 2);
+  layout->addWidget(m_hostcode_label, 0, 1);
+  layout->addWidget(m_hostcode_action_button, 0, 2);
   layout->addWidget(m_players_list, 1, 0, 1, -1);
   layout->addWidget(m_kick_button, 2, 0, 1, -1);
   layout->addWidget(m_assign_ports_button, 3, 0, 1, -1);
@@ -324,28 +320,28 @@ void NetPlayDialog::ConnectWidgets()
 {
   // Players
   connect(m_room_box, &QComboBox::currentIndexChanged, this, &NetPlayDialog::UpdateGUI);
-  //connect(m_hostcode_action_button, &QPushButton::clicked, [this] {
-  //  if (m_is_copy_button_retry)
-  //    Common::g_TraversalClient->ReconnectToServer();
-  //  else
-  //    QApplication::clipboard()->setText(m_hostcode_label->text());
-  //});
+  connect(m_hostcode_action_button, &QPushButton::clicked, [this] {
+    if (m_is_copy_button_retry)
+      Common::g_TraversalClient->ReconnectToServer();
+    else
+      QApplication::clipboard()->setText(m_hostcode_label->text());
+  });
   connect(m_players_list, &QTableWidget::itemSelectionChanged, [this] {
     int row = m_players_list->currentRow();
     m_kick_button->setEnabled(row > 0 &&
                               !m_players_list->currentItem()->data(Qt::UserRole).isNull());
   });
   connect(m_kick_button, &QPushButton::clicked, [this] {
-   // auto id = m_players_list->currentItem()->data(Qt::UserRole).toInt();
-    //Settings::Instance().GetNetPlayServer()->KickPlayer(id);
+    auto id = m_players_list->currentItem()->data(Qt::UserRole).toInt();
+    Settings::Instance().GetNetPlayServer()->KickPlayer(id);
   });
   connect(m_assign_ports_button, &QPushButton::clicked, [this] {
     SetQWidgetWindowDecorations(m_pad_mapping);
     m_pad_mapping->exec();
 
-   //Settings::Instance().GetNetPlayServer()->SetPadMapping(m_pad_mapping->GetGCPadArray());
-   //Settings::Instance().GetNetPlayServer()->SetGBAConfig(m_pad_mapping->GetGBAArray(), true);
-   //Settings::Instance().GetNetPlayServer()->SetWiimoteMapping(m_pad_mapping->GetWiimoteArray());
+    Settings::Instance().GetNetPlayServer()->SetPadMapping(m_pad_mapping->GetGCPadArray());
+    Settings::Instance().GetNetPlayServer()->SetGBAConfig(m_pad_mapping->GetGBAArray(), true);
+    Settings::Instance().GetNetPlayServer()->SetWiimoteMapping(m_pad_mapping->GetWiimoteArray());
   });
 
   // Chat
@@ -359,22 +355,20 @@ void NetPlayDialog::ConnectWidgets()
     if (value == m_buffer_size)
       return;
 
-   // auto client = Settings::Instance().GetNetPlayClient();
-   // auto server = Settings::Instance().GetNetPlayServer();
-   // if (server && !m_host_input_authority)
-   //   server->AdjustPadBufferSize(value);
-   // else
-   //   client->AdjustPadBufferSize(value);
-   //
-   
+    auto client = Settings::Instance().GetNetPlayClient();
+    auto server = Settings::Instance().GetNetPlayServer();
+    if (server && !m_host_input_authority)
+      server->AdjustPadBufferSize(value);
+    else
+      client->AdjustPadBufferSize(value);
   });
 
   const auto hia_function = [this](bool enable) {
     if (m_host_input_authority != enable)
     {
-     // auto server = Settings::Instance().GetNetPlayServer();
-     // if (server)
-     //   server->SetHostInputAuthority(enable);
+      auto server = Settings::Instance().GetNetPlayServer();
+      if (server)
+        server->SetHostInputAuthority(enable);
     }
   };
 
@@ -391,11 +385,12 @@ void NetPlayDialog::ConnectWidgets()
     SetQWidgetWindowDecorations(&gld);
     if (gld.exec() == QDialog::Accepted)
     {
+      Settings& settings = Settings::Instance();
+
       const UICommon::GameFile& game = gld.GetSelectedGame();
       const std::string netplay_name = m_game_list_model.GetNetPlayName(game);
 
-      Settings::Instance().GetNetDriver()->ChangeGame(game.GetSyncIdentifier(), netplay_name);
-
+      settings.GetNetPlayServer()->ChangeGame(game.GetSyncIdentifier(), netplay_name);
       Settings::GetQSettings().setValue(QStringLiteral("netplay/hostgame"),
                                         QString::fromStdString(netplay_name));
     }
@@ -408,7 +403,7 @@ void NetPlayDialog::ConnectWidgets()
       if ((state == Core::State::Uninitialized || state == Core::State::Stopping) &&
           !m_got_stop_request)
       {
-       // Settings::Instance().GetNetPlayClient()->RequestStopGame();
+        Settings::Instance().GetNetPlayClient()->RequestStopGame();
       }
       if (state == Core::State::Uninitialized)
         DisplayMessage(tr("Stopped game"), "red");
@@ -416,11 +411,12 @@ void NetPlayDialog::ConnectWidgets()
   });
 
   // SaveSettings() - Save Hosting-Dialog Settings
+
   connect(m_buffer_size_box, &QSpinBox::valueChanged, this, &NetPlayDialog::SaveSettings);
   connect(m_savedata_none_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_savedata_load_only_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_savedata_load_and_write_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
-  //connect(m_savedata_all_wii_saves_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
+  connect(m_savedata_all_wii_saves_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_sync_codes_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_record_input_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_strict_settings_sync_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
@@ -428,12 +424,12 @@ void NetPlayDialog::ConnectWidgets()
   connect(m_golf_mode_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_golf_mode_overlay_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
   connect(m_fixed_delay_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
-  //connect(m_hide_remote_gbas_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
+  connect(m_hide_remote_gbas_action, &QAction::toggled, this, &NetPlayDialog::SaveSettings);
 }
 
 void NetPlayDialog::SendMessage(const std::string& msg)
 {
-  //Settings::Instance().GetNetPlayClient()->SendChatMessage(msg);
+  Settings::Instance().GetNetPlayClient()->SendChatMessage(msg);
 
   DisplayMessage(
       QStringLiteral("%1: %2").arg(QString::fromStdString(m_nickname), QString::fromStdString(msg)),
@@ -493,7 +489,7 @@ void NetPlayDialog::OnStart()
     return;
   }
 
- // if (Settings::Instance().GetNetPlayServer()->RequestStartGame())
+  if (Settings::Instance().GetNetPlayServer()->RequestStartGame())
     SetOptionsEnabled(false);
 }
 
@@ -506,10 +502,10 @@ void NetPlayDialog::reject()
   }
 }
 
-void NetPlayDialog::show(std::string nickname)
+void NetPlayDialog::show(std::string nickname, bool use_traversal)
 {
   m_nickname = nickname;
- // m_use_traversal = use_traversal;
+  m_use_traversal = use_traversal;
   m_buffer_size = 0;
   m_old_player_count = 0;
 
@@ -517,35 +513,35 @@ void NetPlayDialog::show(std::string nickname)
   m_chat_edit->clear();
   m_chat_type_edit->clear();
 
-  bool is_hosting = Settings::Instance().GetNetDriver()->isHosting;
+  bool is_hosting = Settings::Instance().GetNetPlayServer() != nullptr;
 
-  //if (is_hosting)
-  //{
-  // // if (use_traversal)
-  // //   m_room_box->addItem(tr("Room ID"));
-  // // m_room_box->addItem(tr("External"));
-  //
-  // // for (const auto& iface : Settings::Instance().GetNetPlayServer()->GetInterfaceSet())
-  // // {
-  // //   const auto interface = QString::fromStdString(iface);
-  // //   m_room_box->addItem(iface == "!local!" ? tr("Local") : interface, interface);
-  // // }
-  //}
+  if (is_hosting)
+  {
+    if (use_traversal)
+      m_room_box->addItem(tr("Room ID"));
+    m_room_box->addItem(tr("External"));
+
+    for (const auto& iface : Settings::Instance().GetNetPlayServer()->GetInterfaceSet())
+    {
+      const auto interface = QString::fromStdString(iface);
+      m_room_box->addItem(iface == "!local!" ? tr("Local") : interface, interface);
+    }
+  }
 
   m_data_menu->menuAction()->setVisible(is_hosting);
   m_network_menu->menuAction()->setVisible(is_hosting);
   m_game_digest_menu->menuAction()->setVisible(is_hosting);
-//#ifdef HAS_LIBMGBA
-//  m_hide_remote_gbas_action->setVisible(is_hosting);
-//#else
-//  m_hide_remote_gbas_action->setVisible(false);
-//#endif
+#ifdef HAS_LIBMGBA
+  m_hide_remote_gbas_action->setVisible(is_hosting);
+#else
+  m_hide_remote_gbas_action->setVisible(false);
+#endif
   m_start_button->setHidden(!is_hosting);
   m_kick_button->setHidden(!is_hosting);
   m_assign_ports_button->setHidden(!is_hosting);
   m_room_box->setHidden(!is_hosting);
-  //m_hostcode_label->setHidden(!is_hosting);
- // m_hostcode_action_button->setHidden(!is_hosting);
+  m_hostcode_label->setHidden(!is_hosting);
+  m_hostcode_action_button->setHidden(!is_hosting);
   m_game_button->setEnabled(is_hosting);
   m_kick_button->setEnabled(false);
 
@@ -555,20 +551,20 @@ void NetPlayDialog::show(std::string nickname)
   UpdateGUI();
 }
 
-//void NetPlayDialog::ResetExternalIP()
-//{
-//  m_external_ip_address = Common::Lazy<std::string>([]() -> std::string {
-//    Common::HttpRequest request;
-//    // ENet does not support IPv6, so IPv4 has to be used
-//    request.UseIPv4();
-//    Common::HttpRequest::Response response =
-//        request.Get("https://ip.dolphin-emu.org/", {{"X-Is-Dolphin", "1"}});
-//
-//    if (response.has_value())
-//      return std::string(response->begin(), response->end());
-//    return "";
-//  });
-//}
+void NetPlayDialog::ResetExternalIP()
+{
+  m_external_ip_address = Common::Lazy<std::string>([]() -> std::string {
+    Common::HttpRequest request;
+    // ENet does not support IPv6, so IPv4 has to be used
+    request.UseIPv4();
+    Common::HttpRequest::Response response =
+        request.Get("https://ip.dolphin-emu.org/", {{"X-Is-Dolphin", "1"}});
+
+    if (response.has_value())
+      return std::string(response->begin(), response->end());
+    return "";
+  });
+}
 
 void NetPlayDialog::UpdateDiscordPresence()
 {
@@ -587,31 +583,26 @@ void NetPlayDialog::UpdateDiscordPresence()
 
   if (IsHosting())
   {
-    //upates discord
-    Discord::UpdateDiscordPresence(m_player_count, Discord::SecretType::Empty,
-                                   "Secret",  // std::string(host_id.begin(), host_id.end()),
-                                   m_current_game_name);
+    if (Common::g_TraversalClient)
+    {
+      const auto host_id = Common::g_TraversalClient->GetHostID();
+      if (host_id[0] == '\0')
+        return use_default();
 
-    //if (Common::g_TraversalClient)
-    //{
-    //  const auto host_id = Common::g_TraversalClient->GetHostID();
-    //  if (host_id[0] == '\0')
-    //    return use_default();
-    //
-    //  Discord::UpdateDiscordPresence(m_player_count, Discord::SecretType::RoomID,
-    //                                 std::string(host_id.begin(), host_id.end()),
-    //                                 m_current_game_name);
-    //}
-    //else
-    //{
-    // //if (m_external_ip_address->empty())
-    // //  return use_default();
-    // //const int port = Settings::Instance().GetNetPlayServer()->GetPort();
-    //
-    //  //Discord::UpdateDiscordPresence(
-    // //     m_player_count, Discord::SecretType::IPAddress,
-    // //     Discord::CreateSecretFromIPAddress(*m_external_ip_address, port), m_current_game_name);
-    //}
+      Discord::UpdateDiscordPresence(m_player_count, Discord::SecretType::RoomID,
+                                     std::string(host_id.begin(), host_id.end()),
+                                     m_current_game_name);
+    }
+    else
+    {
+      if (m_external_ip_address->empty())
+        return use_default();
+      const int port = Settings::Instance().GetNetPlayServer()->GetPort();
+
+      Discord::UpdateDiscordPresence(
+          m_player_count, Discord::SecretType::IPAddress,
+          Discord::CreateSecretFromIPAddress(*m_external_ip_address, port), m_current_game_name);
+    }
   }
   else
   {
@@ -622,22 +613,22 @@ void NetPlayDialog::UpdateDiscordPresence()
 
 void NetPlayDialog::UpdateGUI()
 {
-  //auto client = Settings::Instance().GetNetPlayClient();
- // auto server = Settings::Instance().GetNetPlayServer();
- // if (!client)
-  //  return;
+  auto client = Settings::Instance().GetNetPlayClient();
+  auto server = Settings::Instance().GetNetPlayServer();
+  if (!client)
+    return;
 
   // Update Player List
- // const auto players = client->GetPlayers();
+  const auto players = client->GetPlayers();
 
- // if (static_cast<int>(players.size()) != m_player_count && m_player_count != 0)
- //   QApplication::alert(this);
+  if (static_cast<int>(players.size()) != m_player_count && m_player_count != 0)
+    QApplication::alert(this);
 
- // m_player_count = static_cast<int>(players.size());
+  m_player_count = static_cast<int>(players.size());
 
- //int selection_pid = m_players_list->currentItem() ?
- //                        m_players_list->currentItem()->data(Qt::UserRole).toInt() :
- //                        -1;
+  int selection_pid = m_players_list->currentItem() ?
+                          m_players_list->currentItem()->data(Qt::UserRole).toInt() :
+                          -1;
 
   m_players_list->clear();
   m_players_list->setHorizontalHeaderLabels(
@@ -663,38 +654,38 @@ void NetPlayDialog::UpdateGUI()
 
   for (int i = 0; i < m_player_count; i++)
   {
-    //const auto* p = players[i];
+    const auto* p = players[i];
 
-    //auto* name_item = new QTableWidgetItem(QString::fromStdString(p->name));
-    //name_item->setToolTip(name_item->text());
-   // const auto& status_info = player_status.count(p->game_status) ?
-   //                               player_status.at(p->game_status) :
-    //                              std::make_pair(QStringLiteral("?"), QStringLiteral("?"));
-   // auto* status_item = new QTableWidgetItem(status_info.first);
-   // status_item->setToolTip(status_info.second);
-   // auto* ping_item = new QTableWidgetItem(QStringLiteral("%1 ms").arg(p->ping));
-   // ping_item->setToolTip(ping_item->text());
-  //  auto* mapping_item =
-   //     new QTableWidgetItem(QString::fromStdString(NetPlay::GetPlayerMappingString(
-  //         p->pid, client->GetPadMapping(), client->GetGBAConfig(), client->GetWiimoteMapping())));
-  // mapping_item->setToolTip(mapping_item->text());
-  // auto* revision_item = new QTableWidgetItem(QString::fromStdString(p->revision));
-  // revision_item->setToolTip(revision_item->text());
-  //
-  // for (auto* item : {name_item, status_item, ping_item, mapping_item, revision_item})
-  // {
-  //   item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-  //   item->setData(Qt::UserRole, static_cast<int>(p->pid));
-  // }
+    auto* name_item = new QTableWidgetItem(QString::fromStdString(p->name));
+    name_item->setToolTip(name_item->text());
+    const auto& status_info = player_status.count(p->game_status) ?
+                                  player_status.at(p->game_status) :
+                                  std::make_pair(QStringLiteral("?"), QStringLiteral("?"));
+    auto* status_item = new QTableWidgetItem(status_info.first);
+    status_item->setToolTip(status_info.second);
+    auto* ping_item = new QTableWidgetItem(QStringLiteral("%1 ms").arg(p->ping));
+    ping_item->setToolTip(ping_item->text());
+    auto* mapping_item =
+        new QTableWidgetItem(QString::fromStdString(NetPlay::GetPlayerMappingString(
+            p->pid, client->GetPadMapping(), client->GetGBAConfig(), client->GetWiimoteMapping())));
+    mapping_item->setToolTip(mapping_item->text());
+    auto* revision_item = new QTableWidgetItem(QString::fromStdString(p->revision));
+    revision_item->setToolTip(revision_item->text());
 
-  //  m_players_list->setItem(i, 0, name_item);
-  //  m_players_list->setItem(i, 1, status_item);
-  //  m_players_list->setItem(i, 2, ping_item);
-  //  m_players_list->setItem(i, 3, mapping_item);
-  //  m_players_list->setItem(i, 4, revision_item);
-  //
-  //  if (p->pid == selection_pid)
-  //    m_players_list->selectRow(i);
+    for (auto* item : {name_item, status_item, ping_item, mapping_item, revision_item})
+    {
+      item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+      item->setData(Qt::UserRole, static_cast<int>(p->pid));
+    }
+
+    m_players_list->setItem(i, 0, name_item);
+    m_players_list->setItem(i, 1, status_item);
+    m_players_list->setItem(i, 2, ping_item);
+    m_players_list->setItem(i, 3, mapping_item);
+    m_players_list->setItem(i, 4, revision_item);
+
+    if (p->pid == selection_pid)
+      m_players_list->selectRow(i);
   }
 
   if (m_old_player_count != m_player_count)
@@ -703,75 +694,75 @@ void NetPlayDialog::UpdateGUI()
     m_old_player_count = m_player_count;
   }
 
- // if (!server)
-  //  return;
+  if (!server)
+    return;
 
- //const bool is_local_ip_selected = m_room_box->currentIndex() > (m_use_traversal ? 1 : 0);
- //if (is_local_ip_selected)
- //{
- //  m_hostcode_label->setText(QString::fromStdString(
- //      server->GetInterfaceHost(m_room_box->currentData().toString().toStdString())));
- //  m_hostcode_action_button->setEnabled(true);
- //  m_hostcode_action_button->setText(tr("Copy"));
- //  m_is_copy_button_retry = false;
- //}
- //else if (m_use_traversal)
- //{
- //  switch (Common::g_TraversalClient->GetState())
- //  {
- //  case Common::TraversalClient::State::Connecting:
- //    m_hostcode_label->setText(tr("Connecting"));
- //    m_hostcode_action_button->setEnabled(false);
- //    m_hostcode_action_button->setText(tr("..."));
- //    break;
- //  case Common::TraversalClient::State::Connected:
- //  {
- //    if (m_room_box->currentIndex() == 0)
- //    {
- //      // Display Room ID.
- //      const auto host_id = Common::g_TraversalClient->GetHostID();
- //      m_hostcode_label->setText(
- //          QString::fromStdString(std::string(host_id.begin(), host_id.end())));
- //    }
- //    else
- //    {
- //      // Externally mapped IP and port are known when using the traversal server.
- //      m_hostcode_label->setText(
- //          InetAddressToString(Common::g_TraversalClient->GetExternalAddress()));
- //    }
- //
- //    m_hostcode_action_button->setEnabled(true);
- //    m_hostcode_action_button->setText(tr("Copy"));
- //    m_is_copy_button_retry = false;
- //    break;
- //  }
- //  case Common::TraversalClient::State::Failure:
- //    m_hostcode_label->setText(tr("Error"));
- //    m_hostcode_action_button->setText(tr("Retry"));
- //    m_hostcode_action_button->setEnabled(true);
- //    m_is_copy_button_retry = true;
- //    break;
- //  }
- //}
-//else
-//{
-//  // Display External IP.
-//  if (!m_external_ip_address->empty())
-//  {
-//    const int port = Settings::Instance().GetNetPlayServer()->GetPort();
-//    m_hostcode_label->setText(QStringLiteral("%1:%2").arg(
-//        QString::fromStdString(*m_external_ip_address), QString::number(port)));
-//    m_hostcode_action_button->setEnabled(true);
-//  }
-//  else
-//  {
-//    m_hostcode_label->setText(tr("Unknown"));
-//    m_hostcode_action_button->setEnabled(false);
-//  }
-//
-//  m_hostcode_action_button->setText(tr("Copy"));
-//  m_is_copy_button_retry = false;
-//}
+  const bool is_local_ip_selected = m_room_box->currentIndex() > (m_use_traversal ? 1 : 0);
+  if (is_local_ip_selected)
+  {
+    m_hostcode_label->setText(QString::fromStdString(
+        server->GetInterfaceHost(m_room_box->currentData().toString().toStdString())));
+    m_hostcode_action_button->setEnabled(true);
+    m_hostcode_action_button->setText(tr("Copy"));
+    m_is_copy_button_retry = false;
+  }
+  else if (m_use_traversal)
+  {
+    switch (Common::g_TraversalClient->GetState())
+    {
+    case Common::TraversalClient::State::Connecting:
+      m_hostcode_label->setText(tr("Connecting"));
+      m_hostcode_action_button->setEnabled(false);
+      m_hostcode_action_button->setText(tr("..."));
+      break;
+    case Common::TraversalClient::State::Connected:
+    {
+      if (m_room_box->currentIndex() == 0)
+      {
+        // Display Room ID.
+        const auto host_id = Common::g_TraversalClient->GetHostID();
+        m_hostcode_label->setText(
+            QString::fromStdString(std::string(host_id.begin(), host_id.end())));
+      }
+      else
+      {
+        // Externally mapped IP and port are known when using the traversal server.
+        m_hostcode_label->setText(
+            InetAddressToString(Common::g_TraversalClient->GetExternalAddress()));
+      }
+
+      m_hostcode_action_button->setEnabled(true);
+      m_hostcode_action_button->setText(tr("Copy"));
+      m_is_copy_button_retry = false;
+      break;
+    }
+    case Common::TraversalClient::State::Failure:
+      m_hostcode_label->setText(tr("Error"));
+      m_hostcode_action_button->setText(tr("Retry"));
+      m_hostcode_action_button->setEnabled(true);
+      m_is_copy_button_retry = true;
+      break;
+    }
+  }
+  else
+  {
+    // Display External IP.
+    if (!m_external_ip_address->empty())
+    {
+      const int port = Settings::Instance().GetNetPlayServer()->GetPort();
+      m_hostcode_label->setText(QStringLiteral("%1:%2").arg(
+          QString::fromStdString(*m_external_ip_address), QString::number(port)));
+      m_hostcode_action_button->setEnabled(true);
+    }
+    else
+    {
+      m_hostcode_label->setText(tr("Unknown"));
+      m_hostcode_action_button->setEnabled(false);
+    }
+
+    m_hostcode_action_button->setText(tr("Copy"));
+    m_is_copy_button_retry = false;
+  }
 }
 
 // NetPlayUI methods
@@ -794,14 +785,11 @@ void NetPlayDialog::StopGame()
 
 bool NetPlayDialog::IsHosting() const
 {
-  return Settings::Instance().GetNetDriver()->isHosting;
+  return Settings::Instance().GetNetPlayServer() != nullptr;
 }
 
 void NetPlayDialog::Update()
 {
-  // hyjack the update to call steam callbacks
-  SteamAPI_RunCallbacks();
-
   QueueOnObject(this, &NetPlayDialog::UpdateGUI);
 }
 
@@ -867,7 +855,7 @@ void NetPlayDialog::SetOptionsEnabled(bool enabled)
     m_savedata_none_action->setEnabled(enabled);
     m_savedata_load_only_action->setEnabled(enabled);
     m_savedata_load_and_write_action->setEnabled(enabled);
-    //m_savedata_all_wii_saves_action->setEnabled(enabled);
+    m_savedata_all_wii_saves_action->setEnabled(enabled);
     m_sync_codes_action->setEnabled(enabled);
     m_assign_ports_button->setEnabled(enabled);
     m_strict_settings_sync_action->setEnabled(enabled);
@@ -1140,12 +1128,12 @@ void NetPlayDialog::LoadSettings()
   const int buffer_size = Config::Get(Config::NETPLAY_BUFFER_SIZE);
   const bool savedata_load = Config::Get(Config::NETPLAY_SAVEDATA_LOAD);
   const bool savedata_write = Config::Get(Config::NETPLAY_SAVEDATA_WRITE);
- // const bool sync_all_wii_saves = Config::Get(Config::NETPLAY_SAVEDATA_SYNC_ALL_WII);
+  const bool sync_all_wii_saves = Config::Get(Config::NETPLAY_SAVEDATA_SYNC_ALL_WII);
   const bool sync_codes = Config::Get(Config::NETPLAY_SYNC_CODES);
   const bool record_inputs = Config::Get(Config::NETPLAY_RECORD_INPUTS);
   const bool strict_settings_sync = Config::Get(Config::NETPLAY_STRICT_SETTINGS_SYNC);
   const bool golf_mode_overlay = Config::Get(Config::NETPLAY_GOLF_MODE_OVERLAY);
-  //const bool hide_remote_gbas = Config::Get(Config::NETPLAY_HIDE_REMOTE_GBAS);
+  const bool hide_remote_gbas = Config::Get(Config::NETPLAY_HIDE_REMOTE_GBAS);
 
   m_buffer_size_box->setValue(buffer_size);
 
@@ -1155,13 +1143,13 @@ void NetPlayDialog::LoadSettings()
     m_savedata_load_only_action->setChecked(true);
   else
     m_savedata_load_and_write_action->setChecked(true);
-  //m_savedata_all_wii_saves_action->setChecked(sync_all_wii_saves);
+  m_savedata_all_wii_saves_action->setChecked(sync_all_wii_saves);
 
   m_sync_codes_action->setChecked(sync_codes);
   m_record_input_action->setChecked(record_inputs);
   m_strict_settings_sync_action->setChecked(strict_settings_sync);
   m_golf_mode_overlay_action->setChecked(golf_mode_overlay);
- // m_hide_remote_gbas_action->setChecked(hide_remote_gbas);
+  m_hide_remote_gbas_action->setChecked(hide_remote_gbas);
 
   const std::string network_mode = Config::Get(Config::NETPLAY_NETWORK_MODE);
 
@@ -1198,13 +1186,13 @@ void NetPlayDialog::SaveSettings()
   Config::SetBase(Config::NETPLAY_SAVEDATA_LOAD, load_savedata);
   Config::SetBase(Config::NETPLAY_SAVEDATA_WRITE, write_savedata);
 
-  //Config::SetBase(Config::NETPLAY_SAVEDATA_SYNC_ALL_WII,
-   //               m_savedata_all_wii_saves_action->isChecked());
+  Config::SetBase(Config::NETPLAY_SAVEDATA_SYNC_ALL_WII,
+                  m_savedata_all_wii_saves_action->isChecked());
   Config::SetBase(Config::NETPLAY_SYNC_CODES, m_sync_codes_action->isChecked());
   Config::SetBase(Config::NETPLAY_RECORD_INPUTS, m_record_input_action->isChecked());
   Config::SetBase(Config::NETPLAY_STRICT_SETTINGS_SYNC, m_strict_settings_sync_action->isChecked());
   Config::SetBase(Config::NETPLAY_GOLF_MODE_OVERLAY, m_golf_mode_overlay_action->isChecked());
- // Config::SetBase(Config::NETPLAY_HIDE_REMOTE_GBAS, m_hide_remote_gbas_action->isChecked());
+  Config::SetBase(Config::NETPLAY_HIDE_REMOTE_GBAS, m_hide_remote_gbas_action->isChecked());
 
   std::string network_mode;
   if (m_fixed_delay_action->isChecked())
@@ -1285,7 +1273,7 @@ void NetPlayDialog::SetChunkedProgress(const int pid, const u64 progress)
 
 void NetPlayDialog::SetHostWiiSyncData(std::vector<u64> titles, std::string redirect_folder)
 {
- // auto client = Settings::Instance().GetNetPlayClient();
- // if (client)
-  //  client->SetWiiSyncData(nullptr, std::move(titles), std::move(redirect_folder));
+  auto client = Settings::Instance().GetNetPlayClient();
+  if (client)
+    client->SetWiiSyncData(nullptr, std::move(titles), std::move(redirect_folder));
 }

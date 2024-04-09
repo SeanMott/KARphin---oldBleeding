@@ -8,37 +8,11 @@
 #include "Common/CommonTypes.h"
 #include "Common/Config/Config.h"
 
-#include <Core/NetDriver.h>
-//#include "Core/NetDriver.hpp"
-
 namespace Config
 {
 // Configuration Information
 
 // Main.NetPlay
-
-  // defines configs about net play
-extern std::string CONFIG_SETTING_USER_NICKNAME;
-
-extern std::string CONFIG_SETTING_LOBBY_NAME;
-extern std::string CONFIG_SETTING_LOBBY_DESC;
-
-extern u8 CONFIG_SETTING_LOBBY_MAX_PLAYER_COUNT;
-
-extern std::string CONFIG_SETTING_LOBBY_REGION;
-extern std::string CONFIG_SETTING_LOBBY_PASSWORD;
-extern bool CONFIG_SETTING_LOBBY_PASSWORD_IS_ENABLED;
-
-extern u16 CONFIG_SETTING_LOBBY_HOST_PORT;
-extern u16 CONFIG_SETTING_LOBBY_CLIENT_PORT;
-
-extern NetPlay::CustomBackend::KAR_GameMode CONFIG_SETTING_GAME_MODE;
-extern NetPlay::CustomBackend::KAR_GameCatagory CONFIG_SETTING_GAME_CATAGORY;
-extern std::string CONFIG_SETTING_GAME_ROM_NAME;
-
-extern CSteamID CONFIG_SETTING_LOBBY_STEAM_ID;
-
-// mods
 
 extern const Info<std::string> NETPLAY_TRAVERSAL_SERVER;
 extern const Info<u16> NETPLAY_TRAVERSAL_PORT;

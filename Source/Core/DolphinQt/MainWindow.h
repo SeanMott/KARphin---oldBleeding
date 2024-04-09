@@ -41,7 +41,6 @@ class MappingWindow;
 class MemoryWidget;
 class MenuBar;
 class NetPlayDialog;
-//class NetPlayBrowser;
 class NetPlaySetupDialog;
 class NetworkWidget;
 class RegisterWidget;
@@ -252,7 +251,6 @@ private:
   NetPlayDialog* m_netplay_dialog;
   DiscordHandler* m_netplay_discord;
   NetPlaySetupDialog* m_netplay_setup_dialog;
- // NetPlayBrowser* m_netplay_browser_dialog;
   static constexpr int num_gc_controllers = 4;
   std::array<GCTASInputWindow*, num_gc_controllers> m_gc_tas_input_windows{};
   std::array<GBATASInputWindow*, num_gc_controllers> m_gba_tas_input_windows{};

@@ -231,7 +231,7 @@ enum : u8
   CHANNEL_COUNT
 };
 
-using PlayerId = u8;
+using PlayerId = u64;
 using FrameNum = u32;
 using PadIndex = s8;
 using PadMappingArray = std::array<PlayerId, 4>;
