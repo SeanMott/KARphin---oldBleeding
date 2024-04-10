@@ -241,8 +241,8 @@ void MenuBar::AddToolsMenu()
 
   tools_menu->addSeparator();
 
-  tools_menu->addAction(tr("Start &NetPlay..."), this, &MenuBar::StartNetPlay);
-  tools_menu->addAction(tr("Browse &NetPlay Sessions...."), this, &MenuBar::BrowseNetPlay);
+  tools_menu->addAction(tr("Host NetPlay"), this, &MenuBar::StartNetPlay);
+  tools_menu->addAction(tr("Browse &NetPlay Sessions"), this, &MenuBar::BrowseNetPlay);
 
   tools_menu->addSeparator();
 
@@ -595,29 +595,29 @@ void MenuBar::AddHelpMenu()
 {
   QMenu* help_menu = addMenu(tr("&Help"));
 
-  QAction* website = help_menu->addAction(tr("&Website"));
+  QAction* website = help_menu->addAction(tr("&Discord"));
   connect(website, &QAction::triggered, this,
-          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/"))); });
-  QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
-  connect(documentation, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
-  });
+          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("http://discord.gg/p3rGrcr"))); });
+ //QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
+ //connect(documentation, &QAction::triggered, this, []() {
+ //  QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
+ //});
   QAction* github = help_menu->addAction(tr("&GitHub Repository"));
   connect(github, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/dolphin-emu/dolphin")));
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/SeanMott/KARphin")));
   });
-  QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
-  connect(bugtracker, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(
-        QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
-  });
+  //QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
+  //connect(bugtracker, &QAction::triggered, this, []() {
+  //  QDesktopServices::openUrl(
+  //      QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
+  //});
 
-  if (AutoUpdateChecker::SystemSupportsAutoUpdates())
-  {
-    help_menu->addSeparator();
-
-    help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
-  }
+  //if (AutoUpdateChecker::SystemSupportsAutoUpdates())
+  //{
+  //  help_menu->addSeparator();
+  //
+  //  help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
+  //}
 
 #ifndef __APPLE__
   help_menu->addSeparator();

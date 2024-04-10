@@ -30,7 +30,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
 </p>
 
 <p>
-%CHECK_FOR_UPDATES%: <a href='https://github.com/SeanMott/KAR-Decomp/releases'>KARphin releases</a>
+%CHECK_FOR_UPDATES%: <a href='https://github.com/SeanMott/KARphin'>Github</a>
 </p>
 
 <p>
@@ -42,7 +42,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
 </p>
 
 <p>
-<a href='http://discord.gg/p3rGrcr'>Discord Support</a>
+<a href='http://discord.gg/p3rGrcr'>Netplay Discord</a>
 )")
           .replace(QStringLiteral("%VERSION_STRING%"),
                    QString::fromUtf8(Common::GetScmDescStr().c_str()))
@@ -61,7 +61,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
                    // can be downloaded at no cost, but that's not what this message says.)
                    tr("KARphin is a free and open-source Kirby Air Ride emulator."))
           .replace(QStringLiteral("%GAMES_YOU_OWN%"),
-                   tr("This software should not be used to play Kirby Air Ride online."));
+                   tr("This software should be used to play Kirby Air Ride Netplay."));
 
   QLabel* text_label = new QLabel(text);
   text_label->setTextInteractionFlags(Qt::TextBrowserInteraction);
@@ -74,7 +74,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
               // in your translation, please use the type of curly quotes that's appropriate for
               // your language. If you aren't sure which type is appropriate, see
               // https://en.wikipedia.org/wiki/Quotation_mark#Specific_language_features
-              tr("\u00A9 2024+ Sean Mott. \u201cGameCube\u201d, \u201cWii\u201d, and \u201cKirby Air Ride\u201d are "
+              tr("\u00A9 2024 Sean Mott. \u201cGameCube\u201d, \u201cWii\u201d, and \u201cKirby Air Ride\u201d are "
                  "trademarks of Nintendo. KARphin is not affiliated with Nintendo in any way.")));
 
   QLabel* logo = new QLabel();

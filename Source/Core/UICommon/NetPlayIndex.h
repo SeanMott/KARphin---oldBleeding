@@ -14,8 +14,14 @@
 
 #include "Common/Event.h"
 
+#include <Core/CustomNetplayBackend/KARLobby.hpp>
+
 struct NetPlaySession
 {
+  CSteamID steamLobbyID;
+  NetPlay::CustomBackend::KAR::GameCatagory gameCatagory;
+  NetPlay::CustomBackend::KAR::GameMode gameMode;
+
   std::string name;
   std::string region;
   std::string method;
@@ -24,7 +30,9 @@ struct NetPlaySession
   std::string version;
 
   int player_count = 0;
+
   int port = 0;
+  std::string hostCode;
 
   bool has_password = false;
   bool in_game = false;
@@ -45,7 +53,7 @@ public:
   static std::vector<std::pair<std::string, std::string>> GetRegions();
 
   bool Add(const NetPlaySession& session);
-  void Remove();
+ // void Remove();
 
   bool HasActiveSession() const;
 
@@ -58,7 +66,7 @@ public:
   void SetErrorCallback(std::function<void()> callback);
 
 private:
-  void NotificationLoop();
+  //void NotificationLoop();
 
   std::string m_secret;
   std::string m_game;

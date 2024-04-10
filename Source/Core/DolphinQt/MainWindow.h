@@ -13,6 +13,8 @@
 
 #include "Core/Boot/Boot.h"
 
+#include <steam/isteammatchmaking.h>
+
 class QMenu;
 class QStackedWidget;
 class QString;
@@ -83,6 +85,14 @@ public:
 
   bool eventFilter(QObject* object, QEvent* event) override;
   QMenu* createPopupMenu() override;
+
+  // the lobby enter callback
+  void SteamCallbackFunc_OnLobbyEnter(LobbyEnter_t* callback, bool failed);
+  CCallResult<MainWindow, LobbyEnter_t> steamCallResult_OnLobbyEnter;
+
+  // the lobby create callback
+  void SteamCallbackFunc_OnLobbyCreate(LobbyCreated_t* callback, bool failed);
+  CCallResult<MainWindow, LobbyCreated_t> steamCallResult_OnLobbyCreate;
 
 signals:
   void ReadOnlyModeChanged(bool read_only);

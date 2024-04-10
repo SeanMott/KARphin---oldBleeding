@@ -331,6 +331,9 @@ MainWindow::~MainWindow()
   AchievementManager::GetInstance().Shutdown();
 #endif  // USE_RETRO_ACHIEVEMENTS
 
+  // shustdown steam
+  SteamAPI_Shutdown();
+
   delete m_render_widget;
   delete m_netplay_dialog;
 
@@ -1503,9 +1506,26 @@ void MainWindow::BootWiiSystemMenu()
 
 void MainWindow::NetPlayInit()
 {
-  // sets the GUI to dark mode
+  // forces dark mode
   Settings::Instance().SetSystemDark(true);
   Settings::Instance().ApplyStyle();
+
+  // init Steam
+  bool SteamInit = SteamAPI_Init();
+  SteamErrMsg errMsg;
+  SteamAPI_InitEx(&errMsg);
+
+  if (!SteamInit)
+  {
+    ModalMessageBox::critical(nullptr, tr("Netplay Error"), tr("Steam could not be initalized!"));
+
+    return;
+  }
+
+  // Initialize the peer to peer connection process.  This is not required, but we do it
+  // because we cannot accept connections until this initialization completes, and so we
+  // want to start it as soon as possible.
+  SteamNetworkingUtils()->InitRelayNetworkAccess();
 
   const auto& game_list_model = m_game_list->GetGameListModel();
   m_netplay_setup_dialog = new NetPlaySetupDialog(game_list_model, this);
@@ -1520,7 +1540,7 @@ void MainWindow::NetPlayInit()
 
   connect(m_netplay_dialog, &NetPlayDialog::Stop, this, &MainWindow::ForceStop);
   connect(m_netplay_dialog, &NetPlayDialog::rejected, this, &MainWindow::NetPlayQuit);
-  connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Join, this, &MainWindow::NetPlayJoin);
+  //connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Join, this, &MainWindow::NetPlayJoin);
   connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Host, this, &MainWindow::NetPlayHost);
 #ifdef USE_DISCORD_PRESENCE
   connect(m_netplay_discord, &DiscordHandler::Join, this, &MainWindow::NetPlayJoin);
@@ -1532,6 +1552,81 @@ void MainWindow::NetPlayInit()
           &MainWindow::UpdateScreenSaverInhibition);
   connect(&Settings::Instance(), &Settings::EmulationStateChanged, this,
           &MainWindow::UpdateScreenSaverInhibition);
+}
+
+bool waitForConnectionAttemptComplete = false;
+
+//the lobby enter callback
+void MainWindow::SteamCallbackFunc_OnLobbyEnter(LobbyEnter_t* callback, bool failed)
+{
+  auto server = Settings::Instance().GetNetPlayServer();
+
+  NetPlay::CustomBackend::KAR::Lobby lobby;
+  lobby.lobbyID = callback->m_ulSteamIDLobby;
+
+  // Settings
+ // const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  //const bool is_traversal = Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL;  //
+  //traversal_choice == "traversal";
+
+  std::string host_ip;
+  u16 host_port;
+
+  //if we're the server, we just use local host
+  if (server)
+  {
+    host_ip = "127.0.0.1";
+    host_port = server->GetPort();
+  }
+
+  // if we're another client we must get the host code
+  else
+  {
+    // if we're another client, but we're running on the same machine as the host
+    // we just use the local host
+    if (SteamUser()->GetSteamID() == SteamMatchmaking()->GetLobbyOwner(callback->m_ulSteamIDLobby))
+    {
+      host_ip = "127.0.0.1";
+      lobby.Get_HostPort();
+      host_port = lobby.port;  // Config::Get(Config::NETPLAY_CONNECT_PORT);
+    }
+
+    // if we're another client we must get the host code
+    else
+    {
+      lobby.Get_HostCode_IP();
+      host_ip = lobby.hostAddress_IP;  // is_traversal ?
+                   // Config::NETPLAY_LOBBY_HOST_PORT /*Config::Get(Config::NETPLAY_HOST_CODE)*/ :
+                  // std::atoi(Config::NETPLAY_LOBBY_HOST_CODE_OR_IP.c_str());
+     // Config::Get(Config::NETPLAY_ADDRESS);
+      lobby.Get_HostPort();
+      host_port = lobby.port;  // Config::NETPLAY_LOBBY_CONNECT_PORT;  //
+                               // Config::Get(Config::NETPLAY_CONNECT_PORT);
+    }
+
+    // use Steam to generate a IP and port
+    // SteamNetworkingSockets()->BeginAsyncRequestFakeIP(1);
+    //// ISteamNetworkingFakeUDPPort* UDPPort = SteamNetworkingSockets()->CreateFakeUDPPort(0);
+    // SteamNetworkingFakeIPResult_t fakeData;
+    // SteamNetworkingSockets()->GetFakeIP(-1, &fakeData);
+    // const u16 host_port = (*(u16*)&fakeData.m_unPorts);
+    // const u16 traversal_port = host_port;  // Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+    // const u16 traversal_port_alt =
+    //     host_port + 1;  // Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
+  }
+
+  
+
+  
+
+  
+
+  
+
+  
+  waitForConnectionAttemptComplete = false;
+  
+
 }
 
 bool MainWindow::NetPlayJoin()
@@ -1550,11 +1645,29 @@ bool MainWindow::NetPlayJoin()
     return false;
   }
 
+  // if a name is too long
+  if (StringUTF8CodePointCount(Config::NETPLAY_USER_NICKNAME) > NETPLAY_NAME_LENGTH_MAX)
+  {
+    ModalMessageBox::critical(this, tr("Netplay Error"),
+                              tr("Name is too long, we can not let you play!"));
+    return false;
+  }
+
   auto server = Settings::Instance().GetNetPlayServer();
 
-  // Settings
-  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
-  const bool is_traversal = traversal_choice == "traversal";
+  //Config::SetBaseOrCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, "direct");
+  Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL = true;
+
+ //joins the lobby specified
+  steamCallResult_OnLobbyEnter.Set(SteamMatchmaking()->JoinLobby(Config::NETPLAY_LOBBY_STEAM_ID),
+                                   this, &MainWindow::SteamCallbackFunc_OnLobbyEnter);
+
+  //wait till we fail or sussced at connecting
+  waitForConnectionAttemptComplete = true;
+  while (waitForConnectionAttemptComplete)
+  {
+    SteamAPI_RunCallbacks();
+  }
 
   std::string host_ip;
   u16 host_port;
@@ -1565,40 +1678,105 @@ bool MainWindow::NetPlayJoin()
   }
   else
   {
-    host_ip = is_traversal ? Config::Get(Config::NETPLAY_HOST_CODE) :
-                             Config::Get(Config::NETPLAY_ADDRESS);
-    host_port = Config::Get(Config::NETPLAY_CONNECT_PORT);
+    host_ip =  // is_traversal ? Config::Get(Config::NETPLAY_HOST_CODE) :
+        Config::NETPLAY_LOBBY_HOST_CODE_OR_IP;  // Config::Get(Config::NETPLAY_ADDRESS);
+    host_port = Config::NETPLAY_LOBBY_CONNECT_PORT;  // Config::Get(Config::NETPLAY_CONNECT_PORT);
   }
 
-  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
-  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
-  const std::string nickname = Config::Get(Config::NETPLAY_NICKNAME);
+  const std::string traversal_host = Config::NETPLAY_LOBBY_HOST_CODE_OR_IP;
+  //Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::NETPLAY_LOBBY_HOST_PORT;
+    //Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const std::string nickname = Config::NETPLAY_USER_NICKNAME;
+  //Config::Get(Config::NETPLAY_NICKNAME);
   const std::string network_mode = Config::Get(Config::NETPLAY_NETWORK_MODE);
   const bool host_input_authority = network_mode == "hostinputauthority" || network_mode == "golf";
+
+  
 
   if (server)
   {
     server->SetHostInputAuthority(host_input_authority);
-    server->AdjustPadBufferSize(Config::Get(Config::NETPLAY_BUFFER_SIZE));
+    server->AdjustPadBufferSize(Config::NETPLAY_BUFFER_SIZE);
+                               // Config::Get(Config::NETPLAY_BUFFER_SIZE));
   }
 
   // Create Client
-  const bool is_hosting_netplay = server != nullptr;
-  Settings::Instance().ResetNetPlayClient(new NetPlay::NetPlayClient(
-      host_ip, host_port, m_netplay_dialog, nickname,
-      NetPlay::NetTraversalConfig{is_hosting_netplay ? false : is_traversal, traversal_host,
-                                  traversal_port}));
+ // const bool is_hosting_netplay = server != nullptr;
+  Settings::Instance().ResetNetPlayClient(new NetPlay::NetPlayClient(m_netplay_dialog));
+
+  // initalizes ENet
+  Settings::Instance().GetNetPlayClient()->InitalizationENet(
+      host_ip, host_port, nickname,
+      NetPlay::NetTraversalConfig{false, traversal_host,
+                                  traversal_port});
 
   if (!Settings::Instance().GetNetPlayClient()->IsConnected())
   {
+    ModalMessageBox::critical(this, tr("Netplay Error"),
+                              tr("Client failed to connect!"));
+
+    waitForConnectionAttemptComplete = false;
     NetPlayQuit();
     return false;
   }
 
   m_netplay_setup_dialog->close();
-  m_netplay_dialog->show(nickname, is_traversal);
+  m_netplay_dialog->show(nickname, false);
 
   return true;
+}
+
+bool waitForLobbyToFinishCooking = false;
+
+#include <steam/steamnetworkingfakeip.h>
+
+// the lobby create callback
+void MainWindow::SteamCallbackFunc_OnLobbyCreate(LobbyCreated_t* callback, bool failed)
+{
+  //creates the lobby
+  NetPlay::CustomBackend::KAR::Lobby lobby;
+  lobby.lobbyID = callback->m_ulSteamIDLobby;
+  Config::NETPLAY_LOBBY_STEAM_ID = lobby.lobbyID;
+  lobby.Set_Name(Config::NETPLAY_LOBBY_NAME);
+  lobby.Set_Region(Config::NETPLAY_LOBBY_REGION);
+
+  lobby.Set_GameCatagory(NetPlay::CustomBackend::KAR::GameCatagory::Ranked);
+  lobby.Set_GameMode(NetPlay::CustomBackend::KAR::GameMode::City_Trial);
+  lobby.Set_GameStatus(NetPlay::CustomBackend::KAR::GameStatus::Waiting);
+
+  lobby.Set_HostCode_IP(Config::NETPLAY_LOBBY_HOST_CODE_OR_IP);
+  lobby.Set_HostPort(Config::NETPLAY_LOBBY_HOST_PORT);
+  lobby.Set_NetworkMode(true);
+
+
+  //NetPlaySession session;
+  //session.steamLobbyID = callback->m_ulSteamIDLobby;
+  //session.name = Config::Get(Config::NETPLAY_INDEX_NAME);
+  //NetPlay::CustomBackend::KAR::KarLobbyData_Set_Name(session.steamLobbyID, session.name.c_str());
+  //session.region = Config::Get(Config::NETPLAY_INDEX_REGION);
+  //NetPlay::CustomBackend::KAR::KarLobbyData_Set_Region(session.steamLobbyID, session.region.c_str());
+  //session.has_password = !Config::Get(Config::NETPLAY_INDEX_PASSWORD).empty();
+  //session.method = "direct";
+  //session.game_id = Settings::Instance().GetNetPlayServer()->m_selected_game_name.empty() ?
+  //                      "UNKNOWN" :
+  //                      Settings::Instance().GetNetPlayServer()->m_selected_game_name;
+  //NetPlay::CustomBackend::KAR::KarLobbyData_Set_ROMID(session.steamLobbyID, session.game_id.c_str());
+  //session.player_count =
+  //    static_cast<int>(Settings::Instance().GetNetPlayServer()->m_players.size());
+  //session.in_game = false;
+
+  //session.port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  //session.server_id = "127.0.0.1";
+
+  //session.gameCatagory = NetPlay::CustomBackend::KAR::GameCatagory::Ranked;
+  //NetPlay::CustomBackend::KAR::KarLobbyData_Set_GameCatagory(session.steamLobbyID, session.gameCatagory);
+  //session.gameMode = NetPlay::CustomBackend::KAR::GameMode::City_Trial;
+  //NetPlay::CustomBackend::KAR::KarLobbyData_Set_GameMode(session.steamLobbyID, session.gameMode);
+
+ // Settings::Instance().GetNetPlayServer()->CreateSession_Lobby(session);
+
+  waitForLobbyToFinishCooking = false;
 }
 
 bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
@@ -1617,25 +1795,51 @@ bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
     return false;
   }
 
+  // if a name is too long
+  if (StringUTF8CodePointCount(Config::NETPLAY_USER_NICKNAME) > NETPLAY_NAME_LENGTH_MAX)
+  {
+    ModalMessageBox::critical(this, tr("Netplay Error"),
+                              tr("Name is too long, we can not let you play!"));
+    return false;
+  }
+
   // Settings
-  u16 host_port = Config::Get(Config::NETPLAY_HOST_PORT);
-  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
-  const bool is_traversal = traversal_choice == "traversal";
-  const bool use_upnp = Config::Get(Config::NETPLAY_USE_UPNP);
+ // Config::SetBaseOrCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, "direct");
+  Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL = false;
+ // 
+  //u16 host_port = Config::Get(Config::NETPLAY_HOST_PORT);
+  //const std::string traversal_choice = true;
+  //Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL;
+ // traversal_choice == "traversal";
+  const bool use_upnp = Config::NETPLAY_LOBBY_USE_UPNP;  // Config::Get(Config::NETPLAY_USE_UPNP);
 
-  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
-  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
-  const u16 traversal_port_alt = Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
-
-  if (is_traversal)
-    host_port = Config::Get(Config::NETPLAY_LISTEN_PORT);
+  const std::string traversal_host =
+      Config::NETPLAY_LOBBY_HOST_CODE_OR_IP;  // Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  //const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  //const u16 traversal_port_alt = Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
 
   // Create Server
-  Settings::Instance().ResetNetPlayServer(
-      new NetPlay::NetPlayServer(host_port, use_upnp, m_netplay_dialog,
-                                 NetPlay::NetTraversalConfig{is_traversal, traversal_host,
-                                                             traversal_port, traversal_port_alt}));
+  Settings::Instance().ResetNetPlayServer(new NetPlay::NetPlayServer(m_netplay_dialog));
 
+  //use Steam to generate a IP and port
+  SteamNetworkingSockets()->BeginAsyncRequestFakeIP(0);
+  //ISteamNetworkingFakeUDPPort* UDPPort = SteamNetworkingSockets()->CreateFakeUDPPort(0);
+  SteamNetworkingFakeIPResult_t fakeData;
+  SteamNetworkingSockets()->GetFakeIP(0, &fakeData);
+  const u16 host_port = (*(u16*)&fakeData.m_unPorts);
+  const u16 traversal_port = host_port;  // Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const u16 traversal_port_alt = host_port + 1;  // Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
+  Config::NETPLAY_LOBBY_HOST_PORT = traversal_port;
+  //Config::NETPLAY_LOBBY_HOST_PORT = traversal_port_alt);
+
+  // initalizes ENet
+  Settings::Instance().GetNetPlayServer()->InitalizationENet(
+      host_port, use_upnp,
+      NetPlay::NetTraversalConfig{is_traversal, traversal_host, traversal_port,
+                                  traversal_port_alt});
+
+  //if failed
   if (!Settings::Instance().GetNetPlayServer()->is_connected)
   {
     ModalMessageBox::critical(
@@ -1645,6 +1849,30 @@ bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
     NetPlayQuit();
     return false;
   }
+
+  //store data
+  Config::NETPLAY_LOBBY_HOST_CODE_OR_IP =
+      Settings::Instance().GetNetPlayServer()->m_server->address.host;
+  Config::NETPLAY_LOBBY_HOST_PORT = Settings::Instance().GetNetPlayServer()->m_server->address.port;
+
+  //create a lobby with Steam
+  steamCallResult_OnLobbyCreate.Set(
+      SteamMatchmaking()->CreateLobby(ELobbyType::k_ELobbyTypePublic, 2), this,
+      &MainWindow::SteamCallbackFunc_OnLobbyCreate);
+
+  waitForLobbyToFinishCooking = true;
+  while (waitForLobbyToFinishCooking)
+  {
+    SteamAPI_RunCallbacks();
+  }
+
+  //if (is_traversal)
+    //host_port = Config::Get(Config::NETPLAY_LISTEN_PORT);
+
+ 
+  
+
+  
 
   Settings::Instance().GetNetPlayServer()->ChangeGame(game.GetSyncIdentifier(),
                                                       m_game_list->GetNetPlayName(game));
@@ -1657,6 +1885,9 @@ void MainWindow::NetPlayQuit()
 {
   Settings::Instance().ResetNetPlayClient();
   Settings::Instance().ResetNetPlayServer();
+
+  
+
 #ifdef USE_DISCORD_PRESENCE
   Discord::UpdateDiscordPresence();
 #endif

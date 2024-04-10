@@ -959,7 +959,7 @@ void NetPlayDialog::OnHostInputAuthorityChanged(bool enabled)
     if (enabled)
     {
       const QSignalBlocker blocker(m_buffer_size_box);
-      m_buffer_size_box->setValue(Config::Get(Config::NETPLAY_CLIENT_BUFFER_SIZE));
+      m_buffer_size_box->setValue(Config::NETPLAY_CLIENT_BUFFER_SIZE);
     }
   });
 }
@@ -1125,7 +1125,7 @@ std::string NetPlayDialog::FindGBARomPath(const std::array<u8, 20>& hash, std::s
 
 void NetPlayDialog::LoadSettings()
 {
-  const int buffer_size = Config::Get(Config::NETPLAY_BUFFER_SIZE);
+  const int buffer_size = Config::NETPLAY_BUFFER_SIZE;
   const bool savedata_load = Config::Get(Config::NETPLAY_SAVEDATA_LOAD);
   const bool savedata_write = Config::Get(Config::NETPLAY_SAVEDATA_WRITE);
   const bool sync_all_wii_saves = Config::Get(Config::NETPLAY_SAVEDATA_SYNC_ALL_WII);
@@ -1177,9 +1177,9 @@ void NetPlayDialog::SaveSettings()
   Config::ConfigChangeCallbackGuard config_guard;
 
   if (m_host_input_authority)
-    Config::SetBase(Config::NETPLAY_CLIENT_BUFFER_SIZE, m_buffer_size_box->value());
+    Config::NETPLAY_CLIENT_BUFFER_SIZE = m_buffer_size_box->value();
   else
-    Config::SetBase(Config::NETPLAY_BUFFER_SIZE, m_buffer_size_box->value());
+    Config::NETPLAY_BUFFER_SIZE = m_buffer_size_box->value();
 
   const bool write_savedata = m_savedata_load_and_write_action->isChecked();
   const bool load_savedata = write_savedata || m_savedata_load_only_action->isChecked();
