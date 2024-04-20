@@ -14,12 +14,12 @@
 
 AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
 {
-  setWindowTitle(tr("About Dolphin"));
+  setWindowTitle(tr("About KARphin"));
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
   const QString text =
       QStringLiteral(R"(
-<p style='font-size:38pt; font-weight:400;'>Dolphin</p>
+<p style='font-size:38pt; font-weight:400;'>KARphin</p>
 
 <p style='font-size:18pt;'>%VERSION_STRING%</p>
 
@@ -30,7 +30,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
 </p>
 
 <p>
-%CHECK_FOR_UPDATES%: <a href='https://dolphin-emu.org/download'>dolphin-emu.org/download</a>
+%CHECK_FOR_UPDATES%: <a href='https://github.com/SeanMott/KARphin'>KARphin Source</a>
 </p>
 
 <p>
@@ -38,13 +38,14 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
 </p>
 
 <p>
-%GAMES_YOU_OWN%
+<a href='http://discord.gg/p3rGrcr'>%SUPPORT%</a>
 </p>
 
-<p>
-<a href='https://github.com/dolphin-emu/dolphin/blob/master/COPYING'>%LICENSE%</a> |
-<a href='https://github.com/dolphin-emu/dolphin/graphs/contributors'>%AUTHORS%</a> |
-<a href='https://forums.dolphin-emu.org/'>%SUPPORT%</a>
+Special thanks to Jinxy for finding some of the mysterious of Dolphin and being a second pair of eyes on the code. <br/><br/>
+Special thanks to Hey Now for being my custom Dolphin test dummy and putting up with my excited midnight spam of KARphin updates. <br/><br/>
+Special thanks to Kinix for believing in this ludicrous project. <br/><br/>
+
+:3 thank ya'll <br/><br/>
 )")
           .replace(QStringLiteral("%VERSION_STRING%"),
                    QString::fromUtf8(Common::GetScmDescStr().c_str()))
@@ -61,12 +62,10 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
                    // is "free" as in "freedom" - it refers to certain properties of the
                    // software's license, not the software's price. (It is true that Dolphin
                    // can be downloaded at no cost, but that's not what this message says.)
-                   tr("Dolphin is a free and open-source GameCube and Wii emulator."))
+                   tr("KARphin is a free and open-source Kirby Air Ride emulator."))
           .replace(QStringLiteral("%GAMES_YOU_OWN%"),
-                   tr("This software should not be used to play games you do not legally own."))
-          .replace(QStringLiteral("%LICENSE%"), tr("License"))
-          .replace(QStringLiteral("%AUTHORS%"), tr("Authors"))
-          .replace(QStringLiteral("%SUPPORT%"), tr("Support"));
+                   tr("This software should be used to play Kirby Air Ride online."))
+          .replace(QStringLiteral("%SUPPORT%"), tr("Netplay Discord"));
 
   QLabel* text_label = new QLabel(text);
   text_label->setTextInteractionFlags(Qt::TextBrowserInteraction);
@@ -79,8 +78,8 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent)
               // in your translation, please use the type of curly quotes that's appropriate for
               // your language. If you aren't sure which type is appropriate, see
               // https://en.wikipedia.org/wiki/Quotation_mark#Specific_language_features
-              tr("\u00A9 2003-2015+ Dolphin Team. \u201cGameCube\u201d and \u201cWii\u201d are "
-                 "trademarks of Nintendo. Dolphin is not affiliated with Nintendo in any way.")));
+              tr("\u00A9 2024+ Sean Mott. \u201cGameCube\u201d, \u201cWii\u201d, and \u201cKirby Air Ride\u201d are "
+                 "trademarks of Nintendo. KARphin is not affiliated with Nintendo in any way.")));
 
   QLabel* logo = new QLabel();
   logo->setPixmap(Resources::GetAppIcon().pixmap(200, 200));
