@@ -516,6 +516,7 @@ void MainWindow::ConnectMenuBar()
   connect(m_menu_bar, &MenuBar::Exit, this, &MainWindow::close);
   connect(m_menu_bar, &MenuBar::EjectDisc, this, &MainWindow::EjectDisc);
   connect(m_menu_bar, &MenuBar::ChangeDisc, this, &MainWindow::ChangeDisc);
+  connect(m_menu_bar, &MenuBar::ImportSlippiePrefsToKARphin, this, &MainWindow::ShowSlippieSettingToKARphinWindow);
   connect(m_menu_bar, &MenuBar::PrepInstallForKARNetplay, this, &MainWindow::PrepInstallForKARNetplay);
   connect(m_menu_bar, &MenuBar::SyncKARphinInstanceWithKARWorkshop, this, &MainWindow::SyncKARphinInstanceWithKARWorkshop);
 
@@ -1180,18 +1181,36 @@ void MainWindow::PrepInstallForKARNetplay()
 """$Display OSReport Upon Crashing\n"""
 """$Invincible Kirby when not on a machine\n";
 
-  //write base dolphin settings files
-  QFile file(tr("User/Config/Dolphin.ini"));
-  file.open(QIODevice::WriteOnly);
-  file.write("[Analytics]\nID = 8becf168e11a9b2bf56d903e78eefb03\nPermissionAsked = "
-             "True\n[Core]\nAutoDiscChange = False\nCPUThread = True\nEnableCheats = "
-             "True\nOverrideRegionSettings = False\n[NetPlay]\nTraversalChoice = traversal\n[General]\nISOPath0 = C:\\Users\\Jas\\Desktop\\ROMs\\GC\\Kirby Air Ride Hack Pack v1.01\nISOPaths = 1\n");
-
   //writes gekko codes
-  file.close();
-  file.setFileName(tr("User/GameSettings/KHPE01.ini"));
+  QFile file(tr("User/GameSettings/KHPE01.ini"));
   file.open(QIODevice::WriteOnly);
   file.write(gekkoCodes.c_str());
+
+  //writes dolphin settings
+  std::string settings;
+
+  //--analytics
+  settings += "[Analytics]\nID = 8becf168e11a9b2bf56d903e78eefb03\nPermissionAsked = True\n";
+
+  //--core
+  settings += "[Core]\nAutoDiscChange = False\nCPUThread = True\nEnableCheats = True\nOverrideRegionSettings = False\n";
+
+  //--general
+  settings += "[General]\nISOPath0 = C:\\Users\\Jas\\Desktop\\ROMs\\GC\\Kirby Air Ride Hack Pack v1.01\nISOPaths = 1\n";
+
+  //--netplay
+  settings += "[NetPlay]\nTraversalChoice = traversal\nChunkedUploadLimit = 0x00000bb8\n";
+  settings += "ConnectPort = 0x0000\nEnableChunkedUploadLimit = False\nHostCode = \n";
+  settings += "HostPort = 0x1082\nIndexName = Lobby 1\nIndexPassword =\nIndexRegion =NA\nNickname = dfs\nUseIndex = True\nUseUPNP = True\n";
+  settings += "Address =\nListenPort = 0x1081\nTraversalPort = 0x0000\nTraversalServer = stun.dolphin-emu.org\nSteamLobbyID = 0x01860000f3a19681\nTraversalPortAlt = 0x0001\n";
+  settings += "BufferSize = 0x00000005\nGolfModeOverlay = True\nHideRemoteGBAs = False\nNetworkMode = fixeddelay\nRecordInputs = False\nStrictSettingsSync = False\nSyncAllWiiSaves = False\n";
+  settings += "SyncCodes = False\nSyncSaves = True\nWriteSaveData = True\n";
+
+  // write base dolphin settings files
+  file.close();
+  file.setFileName(tr("User/Config/Dolphin.ini"));
+  file.open(QIODevice::WriteOnly);
+  file.write(settings.c_str());
 
   //closes KARphin
   close();
@@ -1202,6 +1221,7 @@ void MainWindow::SyncKARphinInstanceWithKARWorkshop()
 {
   //search for KAR Workshop
 }
+
 
 void MainWindow::ConnectHotkeys()
 {
@@ -1411,13 +1431,13 @@ void MainWindow::EjectDisc()
   system.GetDVDInterface().EjectDisc(Core::CPUThreadGuard{system}, DVD::EjectCause::User);
 }
 
-void MainWindow::OpenUserFolder()
-{
-  std::string path = File::GetUserPath(D_USER_IDX);
-
-  QUrl url = QUrl::fromLocalFile(QString::fromStdString(path));
-  QDesktopServices::openUrl(url);
-}
+//void MainWindow::OpenUserFolder()
+//{
+//  //std::string path = File::GetUserPath(D_USER_IDX);
+//
+//  QUrl url = QUrl::fromLocalFile(QString::fromStdString("User"));
+//  QDesktopServices::openUrl(url);
+//}
 
 void MainWindow::Open()
 {
@@ -1892,6 +1912,21 @@ void MainWindow::ShowSettingsWindow()
   m_settings_window->show();
   m_settings_window->raise();
   m_settings_window->activateWindow();
+}
+
+ // shows the window for importing Slippie Settings
+void MainWindow::ShowSlippieSettingToKARphinWindow()
+{
+  if (!window_SlippieSettingImport)
+  {
+    window_SlippieSettingImport = new SlippieSettingsImportWindow(this);
+   // InstallHotkeyFilter(m_settings_window);
+  }
+
+  SetQWidgetWindowDecorations(window_SlippieSettingImport);
+  window_SlippieSettingImport->show();
+  window_SlippieSettingImport->raise();
+  window_SlippieSettingImport->activateWindow();
 }
 
 void MainWindow::ShowAudioWindow()

@@ -20,6 +20,8 @@ message(STATUS "Found Qt version ${Qt6_VERSION}")
 set_property(TARGET Qt6::Core PROPERTY INTERFACE_COMPILE_FEATURES "")
 
 add_executable(dolphin-emu
+  SlippieSettingsImportWindow.h
+  SlippieSettingsImportWindow.cpp
   AboutDialog.cpp
   AboutDialog.h
   CheatSearchFactoryWidget.cpp

@@ -82,6 +82,9 @@ MenuBar::MenuBar(QWidget* parent) : QMenuBar(parent)
 
   AddFileMenu();
   AddEmulationMenu();
+  AddNetPlayMenu();
+  AddModdingMenu();
+  AddKARMenu();
   AddMovieMenu();
   AddOptionsMenu();
   AddToolsMenu();
@@ -214,30 +217,14 @@ void MenuBar::AddFileMenu()
 
   file_menu->addSeparator();
 
-  m_open_user_folder =
-      file_menu->addAction(tr("Open &User Folder"), this, &MenuBar::OpenUserFolder);
+  //m_open_user_folder =
+      //file_menu->addAction(tr("Open &User Folder"), this, &MenuBar::OpenUserFolder);
+  fileButton_importSlippieSettingsToKARphin = file_menu->addAction(
+      tr("Import Slippie Settings"), this, &MenuBar::ImportSlippiePrefsToKARphin);
+  fileButton_importSlippieSettingsToKARphin->setToolTip(
+      tr("Imports Slippie prefrences, controls and such to KARphin"));
 
   file_menu->addSeparator();
-
-  //option for prep installing KAR
-
-  //checks if "portable.txt" is next to the program, if not, this will be marked as stage 1
-  //if (!std::filesystem::exists("portable.txt"))
-  //{
-  //  fileButton_ReadyForKARNetplay = file_menu->addAction(tr("Prep Install For KAR Netplay || Stage 1"), this,
-  //                                                       &MenuBar::PrepInstallForKARNetplay);
-  //  fileButton_ReadyForKARNetplay->setToolTip(
-  //      tr("KARphin will be formated for KAR Netplay action. Will NOT overwrite your global Dolphin settings."));
-  //}
-  //
-  ////if "portable.txt" is next to the program, this will be marked
-  //else
-  //{
-  //  fileButton_ReadyForKARNetplay = file_menu->addAction(
-  //      tr("Prep Install For KAR Netplay || Stage 2 || Final Part"), this, &MenuBar::PrepInstallForKARNetplay);
-  //  fileButton_ReadyForKARNetplay->setToolTip(
-  //      tr("KARphin will finish being formated for Netplay"));
-  //}
 
   //menu item for fixing this install and gathering the updated codes
   fileButton_ReadyForKARNetplay = file_menu->addAction(
@@ -257,28 +244,56 @@ void MenuBar::AddFileMenu()
   m_exit_action->setShortcuts({QKeySequence::Quit, QKeySequence(Qt::ALT | Qt::Key_F4)});
 }
 
+// Mods
+void MenuBar::AddModdingMenu()
+{
+  QMenu* moddingMenu = addMenu(tr("&Modding"));
+
+  moddingMenu->addAction(tr("&Resource Pack Manager"), this,
+                        [this] { emit ShowResourcePackManager(); });
+
+  moddingMenu->addAction(tr("&Cheats Manager"), this, [this] { emit ShowCheatsManager(); });
+}
+
+// Netplay
+void MenuBar::AddNetPlayMenu()
+{
+  QMenu* networkingMenu = addMenu(tr("&Netplay"));
+
+  networkingMenu->addAction(tr("Start &NetPlay..."), this, &MenuBar::StartNetPlay);
+  networkingMenu->addAction(tr("Browse &NetPlay Lobbies...."), this, &MenuBar::BrowseNetPlay);
+  networkingMenu->addAction(tr("Network Configs"), this, nullptr);
+}
+
+// KAR Settings
+void MenuBar::AddKARMenu()
+{
+  QMenu* KARMenu = addMenu(tr("&KAR"));
+
+  KARMenu->addAction(tr("Leaderboards"), this, nullptr);
+  KARMenu->addAction(tr("ELO Profile"), this, nullptr);
+  KARMenu->addAction(tr("Tournamates"), this, nullptr);
+  KARMenu->addAction(tr("Parking Lot (Training)"), this, nullptr);
+}
+
 void MenuBar::AddToolsMenu()
 {
   QMenu* tools_menu = addMenu(tr("&Tools"));
 
-  tools_menu->addAction(tr("&Resource Pack Manager"), this,
-                        [this] { emit ShowResourcePackManager(); });
-
-  tools_menu->addAction(tr("&Cheats Manager"), this, [this] { emit ShowCheatsManager(); });
+  
 
   tools_menu->addAction(tr("FIFO Player"), this, &MenuBar::ShowFIFOPlayer);
 
   auto* usb_device_menu = new QMenu(tr("Emulated USB Devices"), tools_menu);
-  usb_device_menu->addAction(tr("&Skylanders Portal"), this, &MenuBar::ShowSkylanderPortal);
-  usb_device_menu->addAction(tr("&Infinity Base"), this, &MenuBar::ShowInfinityBase);
+ // usb_device_menu->addAction(tr("&Skylanders Portal"), this, &MenuBar::ShowSkylanderPortal);
+  //usb_device_menu->addAction(tr("&Infinity Base"), this, &MenuBar::ShowInfinityBase);
   tools_menu->addMenu(usb_device_menu);
 
   tools_menu->addSeparator();
 
-  tools_menu->addAction(tr("Start &NetPlay..."), this, &MenuBar::StartNetPlay);
-  tools_menu->addAction(tr("Browse &NetPlay Sessions...."), this, &MenuBar::BrowseNetPlay);
+  
 
-  tools_menu->addSeparator();
+  //tools_menu->addSeparator();
 
 //#ifdef USE_RETRO_ACHIEVEMENTS
 //  if (Config::Get(Config::RA_ENABLED))

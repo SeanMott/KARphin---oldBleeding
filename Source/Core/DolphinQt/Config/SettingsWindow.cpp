@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <qlineedit.h>
 
 #include "DolphinQt/QtUtils/WrapInScrollArea.h"
 #include "DolphinQt/Resources.h"
@@ -19,7 +20,83 @@
 #include "DolphinQt/Settings/PathPane.h"
 #include "DolphinQt/Settings/WiiPane.h"
 
+#include "DolphinQt/QtUtils/ModalMessageBox.h"
+
 #include "Core/Core.h"
+
+#include <qfile.h>
+
+SlippieSettingsImportWindow::SlippieSettingsImportWindow(QWidget* parent) : QDialog(parent)
+{
+  // Set Window Properties
+  setWindowTitle(tr("Import Slippie Settings"));
+  setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
+  // Main Layout
+  QGridLayout* layout = new QGridLayout;
+
+  //info on how to find it
+  layout->addWidget(new QLabel(tr("---Bring over your settings to KARphin---\n"
+  "\n"
+  "All we need is the full path to the folder containing your install of Faster Melee/Slippie. We will take care of the rest :3."
+  "\n\nExample Path: C:/Users/Jas/Downloads/kar-netplay-win\n\n")), 0, 0);
+
+  // path to the User folder for Slippie label
+  layout->addWidget(new QLabel(tr("Path To Slippie User Directory/Folder")), 2, 0);
+
+  //path to the User folder for Slippie
+  pathToSlippieUserFolder = new QLineEdit(tr("path"));
+  //pathToSlippieUserFolder->setPlaceholderText(tr("put path here"));
+  layout->addWidget(pathToSlippieUserFolder, 2, 1);
+
+
+  // Dialog box buttons
+  QDialogButtonBox* close_box = new QDialogButtonBox(QDialogButtonBox::Close);
+
+  connect(close_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+  layout->addWidget(close_box, 3, 3);
+
+   QDialogButtonBox* accept_box = new QDialogButtonBox(QDialogButtonBox::Ok);
+
+  connect(accept_box, &QDialogButtonBox::accepted, this, &SlippieSettingsImportWindow::ImportSettings);
+
+  layout->addWidget(accept_box, 3, 2);
+
+  setLayout(layout);
+}
+
+// imports the settings
+void SlippieSettingsImportWindow::ImportSettings()
+{
+  //check that the slippie path exists
+  QString slippieDir = pathToSlippieUserFolder->text();
+  if (!std::filesystem::is_directory(slippieDir.toStdString()) || !std::filesystem::exists(slippieDir.toStdString()+ "/Dolphin.exe"))
+  {
+    ModalMessageBox::critical(
+        parentWidget(), tr("Slippie Import Error"),
+        tr("The given directory did not contain a install of Faster Melee/Slippie"));
+    return;
+  }
+
+  //clear out old version if they exist
+  QFile::remove(tr("User/Config/GCPadNew.ini"));
+  QFile::remove(tr("User/Config/Profiles"));
+
+  //copies configs
+  QFile::copy(slippieDir + tr("/User/Config/GCPadNew.ini"), tr("User/Config/GCPadNew.ini"));
+
+  //generates directories
+  std::filesystem::create_directories("User/Config/Profiles/GCPad");
+
+  //copies the data
+  QString GCPadDir = QString((slippieDir + tr("/User/Config/Profiles/GCPad")));
+  for (const auto& entry : std::filesystem::directory_iterator(GCPadDir.toStdString()))
+    QFile::copy(QString::fromStdString(entry.path().string()), QString(tr("User/Config/Profiles/GCPad/") + QString::fromStdString(entry.path().filename().string())));
+
+  //closes window
+  this->close();
+}
 
 SettingsWindow::SettingsWindow(QWidget* parent) : QDialog(parent)
 {

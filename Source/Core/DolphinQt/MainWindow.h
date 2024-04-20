@@ -47,6 +47,7 @@ class RegisterWidget;
 class RenderWidget;
 class SearchBar;
 class SettingsWindow;
+class SlippieSettingsImportWindow;
 class SkylanderPortalWindow;
 class ThreadWidget;
 class ToolBar;
@@ -174,6 +175,9 @@ private:
   void ShowCheatsManager();
   void ShowRiivolutionBootWidget(const UICommon::GameFile& game);
 
+  //shows the window for importing Slippie Settings
+  void ShowSlippieSettingToKARphinWindow();
+
 //#ifdef USE_RETRO_ACHIEVEMENTS
 //  void ShowAchievementsWindow();
 //  void ShowAchievementSettings();
@@ -203,7 +207,7 @@ private:
   void ChangeDisc();
   void EjectDisc();
 
-  void OpenUserFolder();
+ // void OpenUserFolder();
 
   QStringList PromptFileNames();
 
@@ -218,6 +222,7 @@ private:
   void PrepInstallForKARNetplay();
   // syncs this instance of KARphin with KAR Workshop
   void SyncKARphinInstanceWithKARWorkshop();
+
 
 #ifdef _WIN32
   // This gets called for each event from the Windows message queue.
@@ -265,6 +270,9 @@ private:
 //#ifdef USE_RETRO_ACHIEVEMENTS
 //  AchievementsWindow* m_achievements_window = nullptr;
 //#endif  // USE_RETRO_ACHIEVEMENTS
+
+  //custom window for importing Slippie
+  SlippieSettingsImportWindow* window_SlippieSettingImport = nullptr;
 
   AssemblerWidget* m_assembler_widget;
   BreakpointWidget* m_breakpoint_widget;

@@ -55,7 +55,10 @@ signals:
   void Exit();
   void ChangeDisc();
   void EjectDisc();
-  void OpenUserFolder();
+  //void OpenUserFolder();
+
+  //allows the user to import their settings from Slippie into this Dolphin
+  void ImportSlippiePrefsToKARphin();
 
   //preps the installation for KAR Netplay
   void PrepInstallForKARNetplay();
@@ -135,6 +138,18 @@ private:
 
   void AddFileMenu();
 
+  //dummy function for doing nothing
+  inline void Dummy_Func() {}
+
+  // Mods
+  void AddModdingMenu();
+
+  // Netplay
+  void AddNetPlayMenu();
+
+  // KAR Settings
+  void AddKARMenu();
+
   void AddEmulationMenu();
   void AddStateLoadMenu(QMenu* emu_menu);
   void AddStateSaveMenu(QMenu* emu_menu);
@@ -201,9 +216,15 @@ private:
   QAction* m_change_disc;
   QAction* m_eject_disc;
   QMenu* m_backup_menu;
-  QAction* m_open_user_folder;
+  //QAction* m_open_user_folder;
+
+  QAction* fileButton_importSlippieSettingsToKARphin;
   QAction* fileButton_ReadyForKARNetplay;
   QAction* fileButton_SyncKARphinWithWorkshop;
+
+  //Modding
+
+  //Networking
 
   // Tools
   QAction* m_wad_install_action;

@@ -6,6 +6,25 @@
 #include <QDialog>
 
 class QTabWidget;
+class QLineEdit;
+
+//defines a custom window for importing Slippie settings into KARphin
+class SlippieSettingsImportWindow final : public QDialog
+{
+  Q_OBJECT
+public:
+  explicit SlippieSettingsImportWindow(QWidget* parent = nullptr);
+  //void SelectGeneralPane();
+  //void SelectAudioPane();
+
+  //imports the settings
+  void ImportSettings();
+
+private:
+  QLineEdit* pathToSlippieUserFolder;
+
+  //QTabWidget* m_tab_widget;
+};
 
 enum class TabIndex
 {
