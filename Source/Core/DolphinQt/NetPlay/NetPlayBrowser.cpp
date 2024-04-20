@@ -29,62 +29,9 @@
 #include "DolphinQt/QtUtils/SetWindowDecorations.h"
 #include "DolphinQt/Settings.h"
 
-// steam callback funcs for lobbies
-void NetPlayBrowser::SteamCallbackFunc_steamCallResult_LobbyListRequest(LobbyMatchList_t* callback,
-                                                                        bool fail)
-{
-  std::vector<NetPlay::CustomBackend::KAR::Lobby> sessions;
-  sessions.reserve(callback->m_nLobbiesMatching);
-
-  //gets the lobbies
-  for (uint32 i = 0; i < callback->m_nLobbiesMatching; ++i)
-  {
-    NetPlay::CustomBackend::KAR::Lobby session;
-    session.lobbyID = SteamMatchmaking()->GetLobbyByIndex(i);
-    session.Get_Name();
-    //.name =
-      //  NetPlay::CustomBackend::KAR::KarLobbyData_Get_Name(session.steamLobbyID);
-
-    //skips the lobby if the name is invalid
-    if (!session.name.size())
-    {
-      SteamMatchmaking()->RequestLobbyData(session.lobbyID);
-      continue;
-    }
-
-    session
-        .Get_Region();  // .region =
-                        // NetPlay::CustomBackend::KAR::KarLobbyData_Get_Region(session.steamLobbyID);
-    session
-        .Get_ROMID();  //.game_id =
-                       //NetPlay::CustomBackend::KAR::KarLobbyData_Get_ROMID(session.steamLobbyID);
-
-    session
-        .Get_GameCatagory();  //.gameCatagory =
-        //NetPlay::CustomBackend::KAR::StrToGameCatagory(NetPlay::CustomBackend::KAR::KarLobbyData_Get_GameCatagory(
-        //    session.steamLobbyID));
-    session
-        .Get_GameMode();  //.gameMode = NetPlay::CustomBackend::KAR::StrToGameMode(
-        //NetPlay::CustomBackend::KAR::KarLobbyData_Get_GameMode(session.steamLobbyID));
-
-   // session.server_id = server_id.to_str();
-    //session.method = method.to_str();
-    //session.version = version.to_str();
-    session.isPassword = false;  //.has_password = false; //has_password.get<bool>();
-    //session.//.player_count = 2;   // static_cast<int>(player_count.get<double>());
-   // session.port = static_cast<int>(port.get<double>());
-    session.status = NetPlay::CustomBackend::KAR::GameStatus::Waiting;
-   // .Set_GameStatus.in_game = false;  // in_game.get<bool>();
-    sessions.emplace_back(std::move(session));
-  }
-
-  // when we have them
-  emit UpdateListRequested(std::move(sessions));
-}
-
 NetPlayBrowser::NetPlayBrowser(QWidget* parent) : QDialog(parent)
 {
-  setWindowTitle(tr("KARphin NetPlay Session Browser"));
+  setWindowTitle(tr("NetPlay Session Browser"));
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
   CreateWidgets();
@@ -236,46 +183,33 @@ void NetPlayBrowser::Refresh()
 
 void NetPlayBrowser::RefreshLoop()
 {
-  // request the steam lobbies
-  SteamMatchmaking()->AddRequestLobbyListStringFilter(
-      "game_mode", NetPlay::CustomBackend::KAR::GameModeToStr(
-                       NetPlay::CustomBackend::KAR::GameMode::City_Trial), ELobbyComparison::k_ELobbyComparisonEqual);
-  SteamMatchmaking()->AddRequestLobbyListDistanceFilter(k_ELobbyDistanceFilterWorldwide);
-  steamCallResult_LobbyListRequest.Set(
-      SteamMatchmaking()->RequestLobbyList(), this,
-      &NetPlayBrowser::SteamCallbackFunc_steamCallResult_LobbyListRequest);
-
   while (m_refresh_run.IsSet())
   {
     m_refresh_event.Wait();
 
     std::unique_lock<std::mutex> lock(m_refresh_filters_mutex);
     if (m_refresh_filters)
-    { 
+    {
       auto filters = std::move(*m_refresh_filters);
-
       m_refresh_filters.reset();
 
       lock.unlock();
 
       emit UpdateStatusRequested(tr("Refreshing..."));
 
-      SteamAPI_RunCallbacks();  // execute callbacks so we can get lobbies
+      NetPlayIndex client;
 
-      //NetPlayIndex client;
-      //
-      //auto entries = client.List(filters);
-      //
-      //if (entries)
-      //{
-      //  //when we have them
-      //  emit UpdateListRequested(std::move(*entries));
-      //}
-      //else
-      //{
-      //  emit UpdateStatusRequested(tr("Error obtaining session list: %1")
-      //                                 .arg(QString::fromStdString(client.GetLastError())));
-      //}
+      auto entries = client.List(filters);
+
+      if (entries)
+      {
+        emit UpdateListRequested(std::move(*entries));
+      }
+      else
+      {
+        emit UpdateStatusRequested(tr("Error obtaining session list: %1")
+                                       .arg(QString::fromStdString(client.GetLastError())));
+      }
     }
   }
 }
@@ -285,11 +219,10 @@ void NetPlayBrowser::UpdateList()
   const int session_count = static_cast<int>(m_sessions.size());
 
   m_table_widget->clear();
-  m_table_widget->setColumnCount(9);
+  m_table_widget->setColumnCount(7);
   m_table_widget->setHorizontalHeaderLabels({tr("Region"), tr("Name"), tr("Password?"),
-                                             tr("In-Game?"), tr("Game"),
-                                             tr("Game Cat"), tr("Game Mode"),
-                                             tr("Players"), tr("Version")});
+                                             tr("In-Game?"), tr("Game"), tr("Players"),
+                                             tr("Version")});
 
   auto* hor_header = m_table_widget->horizontalHeader();
 
@@ -308,30 +241,24 @@ void NetPlayBrowser::UpdateList()
 
     auto* region = new QTableWidgetItem(QString::fromStdString(entry.region));
     auto* name = new QTableWidgetItem(QString::fromStdString(entry.name));
-    auto* password = new QTableWidgetItem(entry.isPassword ? tr("Yes") : tr("No"));
-    auto* in_game =
-        new QTableWidgetItem(tr(NetPlay::CustomBackend::KAR::GameStatusToStr(entry.status)));
-    auto* game_id = new QTableWidgetItem(QString::fromStdString(entry.gameID));
-    auto* player_count =
-        new QTableWidgetItem(QStringLiteral("%1").arg(2));  // entry.maxPlayerCount));
-    auto* cat = new QTableWidgetItem(tr(NetPlay::CustomBackend::KAR::GameCatagoryToStr(entry.gameCatagory)));
-    auto* mode = new QTableWidgetItem(tr(NetPlay::CustomBackend::KAR::GameModeToStr(entry.gameMode)));
-    auto* version = new QTableWidgetItem(QString::fromStdString(entry.KARphinVer));
+    auto* password = new QTableWidgetItem(entry.has_password ? tr("Yes") : tr("No"));
+    auto* in_game = new QTableWidgetItem(entry.in_game ? tr("Yes") : tr("No"));
+    auto* game_id = new QTableWidgetItem(QString::fromStdString(entry.game_id));
+    auto* player_count = new QTableWidgetItem(QStringLiteral("%1").arg(entry.player_count));
+    auto* version = new QTableWidgetItem(QString::fromStdString(entry.version));
 
-   // const bool enabled = Common::GetScmDescStr() == entry.version;
+    const bool enabled = Common::GetScmDescStr() == entry.version;
 
     for (const auto& item : {region, name, password, in_game, game_id, player_count, version})
-      item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+      item->setFlags(enabled ? Qt::ItemIsEnabled | Qt::ItemIsSelectable : Qt::NoItemFlags);
 
     m_table_widget->setItem(i, 0, region);
     m_table_widget->setItem(i, 1, name);
     m_table_widget->setItem(i, 2, password);
     m_table_widget->setItem(i, 3, in_game);
     m_table_widget->setItem(i, 4, game_id);
-    m_table_widget->setItem(i, 5, cat);
-    m_table_widget->setItem(i, 6, mode);
-    m_table_widget->setItem(i, 7, player_count);
-    m_table_widget->setItem(i, 8, version);
+    m_table_widget->setItem(i, 5, player_count);
+    m_table_widget->setItem(i, 6, version);
   }
 
   m_status_label->setText(
@@ -349,7 +276,7 @@ void NetPlayBrowser::OnUpdateStatusRequested(const QString& status)
   m_status_label->setText(status);
 }
 
-void NetPlayBrowser::OnUpdateListRequested(std::vector<NetPlay::CustomBackend::KAR::Lobby> sessions)
+void NetPlayBrowser::OnUpdateListRequested(std::vector<NetPlaySession> sessions)
 {
   m_sessions = std::move(sessions);
   UpdateList();
@@ -362,11 +289,11 @@ void NetPlayBrowser::accept()
 
   const int index = m_table_widget->selectedItems()[0]->row();
 
-  NetPlay::CustomBackend::KAR::Lobby& session = m_sessions[index];
+  NetPlaySession& session = m_sessions[index];
 
- // std::string server_id = session.server_id;
+  std::string server_id = session.server_id;
 
-  if (m_sessions[index].isPassword)
+  if (m_sessions[index].has_password)
   {
     auto* dialog = new QInputDialog(this);
 
@@ -382,31 +309,28 @@ void NetPlayBrowser::accept()
 
     const std::string password = dialog->textValue().toStdString();
 
-   // auto decrypted_id = session.DecryptID(password);
+    auto decrypted_id = session.DecryptID(password);
 
-   // if (!decrypted_id)
-   // {
-   //   ModalMessageBox::warning(this, tr("Error"), tr("Invalid password provided."));
-   //   return;
-    //}
+    if (!decrypted_id)
+    {
+      ModalMessageBox::warning(this, tr("Error"), tr("Invalid password provided."));
+      return;
+    }
 
-    //server_id = decrypted_id.value();
+    server_id = decrypted_id.value();
   }
 
   QDialog::accept();
 
-  Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL = session.isNetModeDirect;
-  Config::NETPLAY_LOBBY_HOST_CODE_OR_IP = session.hostAddress_IP;
-  //Config::SetBaseOrCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, session.method);
+  Config::SetBaseOrCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, session.method);
 
-  Config::NETPLAY_LOBBY_CONNECT_PORT = session.port;
-  //Config::SetBaseOrCurrent(Config::NETPLAY_CONNECT_PORT, session.port);
+  Config::SetBaseOrCurrent(Config::NETPLAY_CONNECT_PORT, session.port);
 
- // if (session.method == "traversal")
- //   Config::SetBaseOrCurrent(Config::NETPLAY_HOST_CODE, server_id);
- // else
- //   Config::SetBaseOrCurrent(Config::NETPLAY_ADDRESS, server_id);
- //
+  if (session.method == "traversal")
+    Config::SetBaseOrCurrent(Config::NETPLAY_HOST_CODE, server_id);
+  else
+    Config::SetBaseOrCurrent(Config::NETPLAY_ADDRESS, server_id);
+
   emit Join();
 }
 

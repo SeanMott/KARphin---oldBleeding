@@ -87,142 +87,6 @@ static bool s_si_poll_batching = false;
 // called from ---GUI--- thread
 NetPlayClient::~NetPlayClient()
 {
-  ShutdownENet();
-}
-
-// called from ---GUI--- thread
-NetPlayClient::NetPlayClient(NetPlayUI* dialog)
-    : m_dialog(dialog)
-{
-
-  
-}
-
-// we push initalization of the networking stuff for ENet into it's own function.
-// So we can do it another time after some after joining the lobby or starting the match
-void NetPlayClient::InitalizationENet(const std::string& _address, const u16 _port,
-  const std::string& _name,
-  const NetTraversalConfig& _traversal_config)
-{
-  ClearBuffers();
-
-  m_player_name = _name;
-
-  //if (!_traversal_config.use_traversal)
- // {
-    // Direct Connection
-    m_client = enet_host_create(nullptr, 1, CHANNEL_COUNT, 0, 0);
-
-    if (m_client == nullptr)
-    {
-      m_dialog->OnConnectionError(_trans("Could not create client."));
-      return;
-    }
-
-    m_client->mtu = std::min(m_client->mtu, NetPlay::MAX_ENET_MTU);
-
-    ENetAddress addr;
-    enet_address_set_host(&addr, _address.c_str());
-    addr.port = 56;  //_port;
-
-    m_server = enet_host_connect(m_client, &addr, CHANNEL_COUNT, 0);
-
-    if (m_server == nullptr)
-    {
-      m_dialog->OnConnectionError(_trans("Could not create peer."));
-      return;
-    }
-
-    // Update time in milliseconds of no acknoledgment of
-    // sent packets before a connection is deemed disconnected
-    enet_peer_timeout(m_server, 0, PEER_TIMEOUT.count(), PEER_TIMEOUT.count());
-
-    ENetEvent netEvent;
-    int net = enet_host_service(m_client, &netEvent, 5000);
-    if (net > 0 && netEvent.type == ENET_EVENT_TYPE_CONNECT)
-    {
-      if (Connect())
-      {
-        m_client->intercept = Common::ENet::InterceptCallback;
-        m_thread = std::thread(&NetPlayClient::ThreadFunc, this);
-      }
-    }
-    else
-    {
-      m_dialog->OnConnectionError(_trans("Could not communicate with host."));
-    }
-  //}
-
-  //tarversal
- //else
- //{
- //  if (_address.size() > Common::NETPLAY_CODE_SIZE)
- //  {
- //    m_dialog->OnConnectionError(
- //        _trans("The host code is too long.\nPlease recheck that you have the correct code."));
- //    return;
- //  }
- //
- //  if (!Common::EnsureTraversalClient(_traversal_config.traversal_host,
- //                                     _traversal_config.traversal_port))
- //  {
- //    return;
- //  }
- //  m_client = Common::g_MainNetHost.get();
- //
- //  m_traversal_client = Common::g_TraversalClient.get();
- //
- //  // If we were disconnected in the background, reconnect.
- //  if (m_traversal_client->HasFailed())
- //    m_traversal_client->ReconnectToServer();
- //  m_traversal_client->m_Client = this;
- //  m_host_spec = _address;
- //  m_connection_state = ConnectionState::WaitingForTraversalClientConnection;
- //  OnTraversalStateChanged();
- //  m_connecting = true;
- //
- //  Common::Timer connect_timer;
- //  connect_timer.Start();
- //
- //  while (m_connecting)
- //  {
- //    ENetEvent netEvent;
- //    if (m_traversal_client)
- //      m_traversal_client->HandleResends();
- //
- //    while (enet_host_service(m_client, &netEvent, 4) > 0)
- //    {
- //      sf::Packet rpac;
- //      switch (netEvent.type)
- //      {
- //      case ENET_EVENT_TYPE_CONNECT:
- //        m_server = netEvent.peer;
- //
- //        // Update time in milliseconds of no acknoledgment of
- //        // sent packets before a connection is deemed disconnected
- //        enet_peer_timeout(m_server, 0, PEER_TIMEOUT.count(), PEER_TIMEOUT.count());
- //
- //        if (Connect())
- //        {
- //          m_connection_state = ConnectionState::Connected;
- //          m_thread = std::thread(&NetPlayClient::ThreadFunc, this);
- //        }
- //        return;
- //      default:
- //        break;
- //      }
- //    }
- //    if (connect_timer.ElapsedMs() > 5000)
- //      break;
- //  }
- //  m_dialog->OnConnectionError(_trans("Could not communicate with host."));
- //}
-}
-
-// we push DE-initalization of the networking stuff for ENet into it's own function.
-// So we can do it another time after some after leaving the lobby or stoping netplay in general
-void NetPlayClient::ShutdownENet()
-{
   // not perfect
   if (m_is_running.IsSet())
     StopGame();
@@ -258,6 +122,122 @@ void NetPlayClient::ShutdownENet()
   if (m_traversal_client)
   {
     Common::ReleaseTraversalClient();
+  }
+}
+
+// called from ---GUI--- thread
+NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog,
+                             const std::string& name, const NetTraversalConfig& traversal_config)
+    : m_dialog(dialog), m_player_name(name)
+{
+  ClearBuffers();
+
+  if (!traversal_config.use_traversal)
+  {
+    // Direct Connection
+    m_client = enet_host_create(nullptr, 1, CHANNEL_COUNT, 0, 0);
+
+    if (m_client == nullptr)
+    {
+      m_dialog->OnConnectionError(_trans("Could not create client."));
+      return;
+    }
+
+    m_client->mtu = std::min(m_client->mtu, NetPlay::MAX_ENET_MTU);
+
+    ENetAddress addr;
+    enet_address_set_host(&addr, address.c_str());
+    addr.port = port;
+
+    m_server = enet_host_connect(m_client, &addr, CHANNEL_COUNT, 0);
+
+    if (m_server == nullptr)
+    {
+      m_dialog->OnConnectionError(_trans("Could not create peer."));
+      return;
+    }
+
+    // Update time in milliseconds of no acknoledgment of
+    // sent packets before a connection is deemed disconnected
+    enet_peer_timeout(m_server, 0, PEER_TIMEOUT.count(), PEER_TIMEOUT.count());
+
+    ENetEvent netEvent;
+    int net = enet_host_service(m_client, &netEvent, 5000);
+    if (net > 0 && netEvent.type == ENET_EVENT_TYPE_CONNECT)
+    {
+      if (Connect())
+      {
+        m_client->intercept = Common::ENet::InterceptCallback;
+        m_thread = std::thread(&NetPlayClient::ThreadFunc, this);
+      }
+    }
+    else
+    {
+      m_dialog->OnConnectionError(_trans("Could not communicate with host."));
+    }
+  }
+  else
+  {
+    if (address.size() > Common::NETPLAY_CODE_SIZE)
+    {
+      m_dialog->OnConnectionError(
+          _trans("The host code is too long.\nPlease recheck that you have the correct code."));
+      return;
+    }
+
+    if (!Common::EnsureTraversalClient(traversal_config.traversal_host,
+                                       traversal_config.traversal_port))
+    {
+      return;
+    }
+    m_client = Common::g_MainNetHost.get();
+
+    m_traversal_client = Common::g_TraversalClient.get();
+
+    // If we were disconnected in the background, reconnect.
+    if (m_traversal_client->HasFailed())
+      m_traversal_client->ReconnectToServer();
+    m_traversal_client->m_Client = this;
+    m_host_spec = address;
+    m_connection_state = ConnectionState::WaitingForTraversalClientConnection;
+    OnTraversalStateChanged();
+    m_connecting = true;
+
+    Common::Timer connect_timer;
+    connect_timer.Start();
+
+    while (m_connecting)
+    {
+      ENetEvent netEvent;
+      if (m_traversal_client)
+        m_traversal_client->HandleResends();
+
+      while (enet_host_service(m_client, &netEvent, 4) > 0)
+      {
+        sf::Packet rpac;
+        switch (netEvent.type)
+        {
+        case ENET_EVENT_TYPE_CONNECT:
+          m_server = netEvent.peer;
+
+          // Update time in milliseconds of no acknoledgment of
+          // sent packets before a connection is deemed disconnected
+          enet_peer_timeout(m_server, 0, PEER_TIMEOUT.count(), PEER_TIMEOUT.count());
+
+          if (Connect())
+          {
+            m_connection_state = ConnectionState::Connected;
+            m_thread = std::thread(&NetPlayClient::ThreadFunc, this);
+          }
+          return;
+        default:
+          break;
+        }
+      }
+      if (connect_timer.ElapsedMs() > 5000)
+        break;
+    }
+    m_dialog->OnConnectionError(_trans("Could not communicate with host."));
   }
 }
 
@@ -1606,7 +1586,7 @@ void NetPlayClient::ThreadFunc()
   INFO_LOG_FMT(NETPLAY, "NetPlayClient starting.");
 
   Common::QoSSession qos_session;
-  if (Config::NETPLAY_LOBBY_ENABLE_QOS) //(Config::Get(Config::NETPLAY_ENABLE_QOS))
+  if (Config::Get(Config::NETPLAY_ENABLE_QOS))
   {
     qos_session = Common::QoSSession(m_server);
 
@@ -1623,8 +1603,6 @@ void NetPlayClient::ThreadFunc()
 
   while (m_do_loop.IsSet())
   {
-    SteamAPI_RunCallbacks();  // execute callbacks so we can get lobbies
-
     ENetEvent netEvent;
     int net;
     if (m_traversal_client)

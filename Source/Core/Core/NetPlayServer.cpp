@@ -88,83 +88,6 @@ namespace NetPlay
 {
 NetPlayServer::~NetPlayServer()
 {
-  ShutdownENet();
-}
-
-// called from ---GUI--- thread
-NetPlayServer::NetPlayServer(NetPlayUI* dialog)
-    : m_dialog(dialog)
-{
-  
-}
-
-// we push initalization of the networking stuff for ENet into it's own function.
-// So we can do it another time after some after joining the lobby or starting the match
-void NetPlayServer::InitalizationENet(u16 _port, bool _forward_port,
-                                      const NetTraversalConfig& _traversal_config)
-{
-  //--use server time
-  if (enet_initialize() != 0)
-  {
-    PanicAlertFmtT("Enet Didn't Initialize");
-  }
-
-  m_pad_map.fill(0);
-  m_gba_config.fill({});
-  m_wiimote_map.fill(0);
-
-  //if (_traversal_config.use_traversal)
-  //{
-    if (!Common::EnsureTraversalClient(_traversal_config.traversal_host,
-                                       _traversal_config.traversal_port,
-                                       _traversal_config.traversal_port_alt,56))// _port))
-    {
-      return;
-    }
-
-    Common::g_TraversalClient->m_Client = this;
-    m_traversal_client = Common::g_TraversalClient.get();
-
-    m_server = Common::g_MainNetHost.get();
-
-    if (Common::g_TraversalClient->HasFailed())
-      Common::g_TraversalClient->ReconnectToServer();
-  //}
-
-  //traversal
-  //else
-  //{
-  //  ENetAddress serverAddr;
-  //  serverAddr.host = ENET_HOST_ANY;
-  //  serverAddr.port = _port;
-  //  m_server = enet_host_create(&serverAddr, 10, CHANNEL_COUNT, 0, 0);
-  //  if (m_server != nullptr)
-  //  {
-  //    m_server->mtu = std::min(m_server->mtu, NetPlay::MAX_ENET_MTU);
-  //    m_server->intercept = Common::ENet::InterceptCallback;
-  //  }
-  //
-  //  
-  //}
-  if (m_server != nullptr)
-  {
-    is_connected = true;
-    m_do_loop = true;
-    m_thread = std::thread(&NetPlayServer::ThreadFunc, this);
-    m_target_buffer_size = 5;
-    m_chunked_data_thread = std::thread(&NetPlayServer::ChunkedDataThreadFunc, this);
-
-#ifdef USE_UPNP
-    if (_forward_port && !_traversal_config.use_traversal)
-      Common::UPnP::TryPortmapping(_port);
-#endif
-  }
-}
-
-// we push DE-initalization of the networking stuff for ENet into it's own function.
-// So we can do it another time after some after leaving the lobby or stoping netplay in general
-void NetPlayServer::ShutdownENet()
-{
   if (is_connected)
   {
     m_do_loop = false;
@@ -192,6 +115,67 @@ void NetPlayServer::ShutdownENet()
 #endif
 }
 
+// called from ---GUI--- thread
+NetPlayServer::NetPlayServer(const u16 port, const bool forward_port, NetPlayUI* dialog,
+                             const NetTraversalConfig& traversal_config)
+    : m_dialog(dialog)
+{
+  //--use server time
+  if (enet_initialize() != 0)
+  {
+    PanicAlertFmtT("Enet Didn't Initialize");
+  }
+
+  m_pad_map.fill(0);
+  m_gba_config.fill({});
+  m_wiimote_map.fill(0);
+
+  if (traversal_config.use_traversal)
+  {
+    if (!Common::EnsureTraversalClient(traversal_config.traversal_host,
+                                       traversal_config.traversal_port,
+                                       traversal_config.traversal_port_alt, port))
+    {
+      return;
+    }
+
+    Common::g_TraversalClient->m_Client = this;
+    m_traversal_client = Common::g_TraversalClient.get();
+
+    m_server = Common::g_MainNetHost.get();
+
+    if (Common::g_TraversalClient->HasFailed())
+      Common::g_TraversalClient->ReconnectToServer();
+  }
+  else
+  {
+    ENetAddress serverAddr;
+    serverAddr.host = ENET_HOST_ANY;
+    serverAddr.port = port;
+    m_server = enet_host_create(&serverAddr, 10, CHANNEL_COUNT, 0, 0);
+    if (m_server != nullptr)
+    {
+      m_server->mtu = std::min(m_server->mtu, NetPlay::MAX_ENET_MTU);
+      m_server->intercept = Common::ENet::InterceptCallback;
+    }
+
+    SetupIndex();
+  }
+  if (m_server != nullptr)
+  {
+    is_connected = true;
+    m_do_loop = true;
+    m_thread = std::thread(&NetPlayServer::ThreadFunc, this);
+    m_target_buffer_size = 5;
+    m_chunked_data_thread = std::thread(&NetPlayServer::ChunkedDataThreadFunc, this);
+
+#ifdef USE_UPNP
+    if (forward_port && !traversal_config.use_traversal)
+      Common::UPnP::TryPortmapping(port);
+#endif
+  }
+}
+
 static PlayerId* PeerPlayerId(ENetPeer* peer)
 {
   return static_cast<PlayerId*>(peer->data);
@@ -206,93 +190,57 @@ static void ClearPeerPlayerId(ENetPeer* peer)
   }
 }
 
-// initalizes a session/lobby
-//void NetPlayServer::CreateSession_Lobby(NetPlaySession session)
-//{
- // if (m_traversal_client)
- // {
- //   if (!m_traversal_client->IsConnected())
- //     return;
- //
- //   session.server_id = std::string(Common::g_TraversalClient->GetHostID().data(), 8);
- // }
-  //else
-  //{
-  //  Common::HttpRequest request;
-  //  // ENet does not support IPv6, so IPv4 has to be used
-  //  request.UseIPv4();
-  //  Common::HttpRequest::Response response =
-  //      request.Get("https://ip.dolphin-emu.org/", {{"X-Is-Dolphin", "1"}});
-  //
-  //  if (!response.has_value())
-  //    return;
-  //
-  //  session.server_id = std::string(response->begin(), response->end());
-  //}
+void NetPlayServer::SetupIndex()
+{
+  if (!Config::Get(Config::NETPLAY_USE_INDEX) || Config::Get(Config::NETPLAY_INDEX_NAME).empty() ||
+      Config::Get(Config::NETPLAY_INDEX_REGION).empty())
+  {
+    return;
+  }
 
-  //session.EncryptID(Config::Get(Config::NETPLAY_INDEX_PASSWORD));
+  NetPlaySession session;
 
-  //bool success = m_index.Add(session);
-  //if (m_dialog != nullptr)
-  //  m_dialog->OnIndexAdded(success, success ? "" : m_index.GetLastError());
-  //
-  //m_index.SetErrorCallback([this] {
-  //  if (m_dialog != nullptr)
-  //    m_dialog->OnIndexRefreshFailed(m_index.GetLastError());
-  //});
-//}
+  session.name = Config::Get(Config::NETPLAY_INDEX_NAME);
+  session.region = Config::Get(Config::NETPLAY_INDEX_REGION);
+  session.has_password = !Config::Get(Config::NETPLAY_INDEX_PASSWORD).empty();
+  session.method = m_traversal_client ? "traversal" : "direct";
+  session.game_id = m_selected_game_name.empty() ? "UNKNOWN" : m_selected_game_name;
+  session.player_count = static_cast<int>(m_players.size());
+  session.in_game = m_is_running;
+  session.port = GetPort();
 
-//void NetPlayServer::SetupIndex()
-//{
-//  //if (!Config::Get(Config::NETPLAY_USE_INDEX) || Config::Get(Config::NETPLAY_INDEX_NAME).empty() ||
-//  //    Config::Get(Config::NETPLAY_INDEX_REGION).empty())
-//  //{
-//  //  return;
-//  //}
-//  //
-//  //NetPlaySession session;
-//  //
-//  //session.name = Config::Get(Config::NETPLAY_INDEX_NAME);
-//  //session.region = Config::Get(Config::NETPLAY_INDEX_REGION);
-//  //session.has_password = !Config::Get(Config::NETPLAY_INDEX_PASSWORD).empty();
-//  //session.method = m_traversal_client ? "traversal" : "direct";
-//  //session.game_id = m_selected_game_name.empty() ? "UNKNOWN" : m_selected_game_name;
-//  //session.player_count = static_cast<int>(m_players.size());
-//  //session.in_game = m_is_running;
-//  //session.port = GetPort();
-//  //
-//  //if (m_traversal_client)
-//  //{
-//  //  if (!m_traversal_client->IsConnected())
-//  //    return;
-//  //
-//  //  session.server_id = std::string(Common::g_TraversalClient->GetHostID().data(), 8);
-//  //}
-//  //else
-//  //{
-//  //  Common::HttpRequest request;
-//  //  // ENet does not support IPv6, so IPv4 has to be used
-//  //  request.UseIPv4();
-//  //  Common::HttpRequest::Response response =
-//  //      request.Get("https://ip.dolphin-emu.org/", {{"X-Is-Dolphin", "1"}});
-//  //
-//  //  if (!response.has_value())
-//  //    return;
-//  //
-//  //  session.server_id = std::string(response->begin(), response->end());
-//  //}
-//  //
-//  //session.EncryptID(Config::Get(Config::NETPLAY_INDEX_PASSWORD));
-//  //
-//  //bool success = m_index.Add(session);
-//  //if (m_dialog != nullptr)
-//  //  m_dialog->OnIndexAdded(success, success ? "" : m_index.GetLastError());
-//  //
-//  //m_index.SetErrorCallback([this] {
-//  //  if (m_dialog != nullptr)
-//  //    m_dialog->OnIndexRefreshFailed(m_index.GetLastError());
-//  //});
-//}
+  if (m_traversal_client)
+  {
+    if (!m_traversal_client->IsConnected())
+      return;
+
+    session.server_id = std::string(Common::g_TraversalClient->GetHostID().data(), 8);
+  }
+  else
+  {
+    Common::HttpRequest request;
+    // ENet does not support IPv6, so IPv4 has to be used
+    request.UseIPv4();
+    Common::HttpRequest::Response response =
+        request.Get("https://ip.dolphin-emu.org/", {{"X-Is-Dolphin", "1"}});
+
+    if (!response.has_value())
+      return;
+
+    session.server_id = std::string(response->begin(), response->end());
+  }
+
+  session.EncryptID(Config::Get(Config::NETPLAY_INDEX_PASSWORD));
+
+  bool success = m_index.Add(session);
+  if (m_dialog != nullptr)
+    m_dialog->OnIndexAdded(success, success ? "" : m_index.GetLastError());
+
+  m_index.SetErrorCallback([this] {
+    if (m_dialog != nullptr)
+      m_dialog->OnIndexRefreshFailed(m_index.GetLastError());
+  });
+}
 
 // called from ---NETPLAY--- thread
 void NetPlayServer::ThreadFunc()
@@ -301,8 +249,6 @@ void NetPlayServer::ThreadFunc()
 
   while (m_do_loop)
   {
-    SteamAPI_RunCallbacks();  // execute callbacks so we can get lobbies
-
     // update pings every so many seconds
     if ((m_ping_timer.ElapsedMs() > 1000) || m_update_pings)
     {
@@ -316,9 +262,9 @@ void NetPlayServer::ThreadFunc()
       m_ping_timer.Start();
       SendToClients(spac);
 
-      //m_index.SetPlayerCount(static_cast<int>(m_players.size()));
-      //m_index.SetGame(m_selected_game_name);
-      //m_index.SetInGame(m_is_running);
+      m_index.SetPlayerCount(static_cast<int>(m_players.size()));
+      m_index.SetGame(m_selected_game_name);
+      m_index.SetInGame(m_is_running);
 
       m_update_pings = false;
     }
@@ -548,7 +494,7 @@ ConnectionError NetPlayServer::OnConnect(ENetPeer* incoming_connection, sf::Pack
                          static_cast<u8>(existing_player.second.game_status));
   }
 
-  if (Config::NETPLAY_LOBBY_ENABLE_QOS)// Config::Get(Config::NETPLAY_ENABLE_QOS))
+  if (Config::Get(Config::NETPLAY_ENABLE_QOS))
     new_player.qos_session = Common::QoSSession(new_player.socket);
 
   {
@@ -1311,8 +1257,8 @@ void NetPlayServer::OnTraversalStateChanged()
 {
   const Common::TraversalClient::State state = m_traversal_client->GetState();
 
-  //if (Common::g_TraversalClient->GetHostID()[0] != '\0')
-   // SetupIndex();
+  if (Common::g_TraversalClient->GetHostID()[0] != '\0')
+    SetupIndex();
 
   if (!m_dialog)
     return;
@@ -2458,10 +2404,9 @@ void NetPlayServer::ChunkedDataThreadFunc()
           m_dialog->ShowChunkedProgressDialog(e.title, e.packet.getDataSize(), players);
       }
 
-      const bool enable_limit = Config::
-          NETPLAY_ENABLE_CHUNKED_UPLOAD_LIMIT;  // Config::Get(Config::NETPLAY_ENABLE_CHUNKED_UPLOAD_LIMIT);
+      const bool enable_limit = Config::Get(Config::NETPLAY_ENABLE_CHUNKED_UPLOAD_LIMIT);
       const float bytes_per_second =
-          (std::max(Config::NETPLAY_CHUNKED_UPLOAD_LIMIT /*Config::Get(Config::NETPLAY_CHUNKED_UPLOAD_LIMIT)*/, 1u) / 8.0f) * 1024.0f;
+          (std::max(Config::Get(Config::NETPLAY_CHUNKED_UPLOAD_LIMIT), 1u) / 8.0f) * 1024.0f;
       const std::chrono::duration<double> send_interval(CHUNKED_DATA_UNIT_SIZE / bytes_per_second);
       bool skip_wait = false;
       size_t index = 0;

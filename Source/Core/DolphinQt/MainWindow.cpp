@@ -247,12 +247,12 @@ MainWindow::MainWindow(std::unique_ptr<BootParameters> boot_parameters,
   connect(m_cheats_manager, &CheatsManager::OpenGeneralSettings, this,
           &MainWindow::ShowGeneralWindow);
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  connect(m_cheats_manager, &CheatsManager::OpenAchievementSettings, this,
-          &MainWindow::ShowAchievementSettings);
-  connect(m_game_list, &GameList::OpenAchievementSettings, this,
-          &MainWindow::ShowAchievementSettings);
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  connect(m_cheats_manager, &CheatsManager::OpenAchievementSettings, this,
+//          &MainWindow::ShowAchievementSettings);
+//  connect(m_game_list, &GameList::OpenAchievementSettings, this,
+//          &MainWindow::ShowAchievementSettings);
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   InitCoreCallbacks();
 
@@ -330,9 +330,6 @@ MainWindow::~MainWindow()
 #ifdef USE_RETRO_ACHIEVEMENTS
   AchievementManager::GetInstance().Shutdown();
 #endif  // USE_RETRO_ACHIEVEMENTS
-
-  // shustdown steam
-  SteamAPI_Shutdown();
 
   delete m_render_widget;
   delete m_netplay_dialog;
@@ -519,7 +516,8 @@ void MainWindow::ConnectMenuBar()
   connect(m_menu_bar, &MenuBar::Exit, this, &MainWindow::close);
   connect(m_menu_bar, &MenuBar::EjectDisc, this, &MainWindow::EjectDisc);
   connect(m_menu_bar, &MenuBar::ChangeDisc, this, &MainWindow::ChangeDisc);
-  connect(m_menu_bar, &MenuBar::OpenUserFolder, this, &MainWindow::OpenUserFolder);
+  connect(m_menu_bar, &MenuBar::PrepInstallForKARNetplay, this, &MainWindow::PrepInstallForKARNetplay);
+  connect(m_menu_bar, &MenuBar::SyncKARphinInstanceWithKARWorkshop, this, &MainWindow::SyncKARphinInstanceWithKARWorkshop);
 
   // Emulation
   connect(m_menu_bar, &MenuBar::Pause, this, &MainWindow::Pause);
@@ -564,9 +562,9 @@ void MainWindow::ConnectMenuBar()
   connect(m_menu_bar, &MenuBar::ShowInfinityBase, this, &MainWindow::ShowInfinityBase);
   connect(m_menu_bar, &MenuBar::ConnectWiiRemote, this, &MainWindow::OnConnectWiiRemote);
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  connect(m_menu_bar, &MenuBar::ShowAchievementsWindow, this, &MainWindow::ShowAchievementsWindow);
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  connect(m_menu_bar, &MenuBar::ShowAchievementsWindow, this, &MainWindow::ShowAchievementsWindow);
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   // Movie
   connect(m_menu_bar, &MenuBar::PlayRecording, this, &MainWindow::OnPlayRecording);
@@ -594,6 +592,37 @@ void MainWindow::ConnectMenuBar()
   connect(m_game_list, &GameList::SelectionChanged, m_menu_bar, &MenuBar::SelectionChanged);
   connect(this, &MainWindow::ReadOnlyModeChanged, m_menu_bar, &MenuBar::ReadOnlyModeChanged);
   connect(this, &MainWindow::RecordingStatusChanged, m_menu_bar, &MenuBar::RecordingStatusChanged);
+}
+
+ // preps the installation for KAR Netplay
+void MainWindow::PrepInstallForKARNetplay()
+{
+  // informs the user what we are doing
+  if (ModalMessageBox::question(
+          this, tr("Prepare for KAR Netplay! Just getting our Waddle Dees in a row."),
+          tr("Your KARphin instance will be prepared for KAR Netplay.\n\n"
+             "---We will NOT override any of your global Dolphin settings.---"),
+          QMessageBox::Yes | QMessageBox::No, QMessageBox::NoButton, Qt::ApplicationModal) != QMessageBox::Yes)
+    return;
+
+  // force style to dark
+  Settings::Instance().SetStyleType(Settings::StyleType::Dark);
+  Settings::Instance().ApplyStyle();
+
+  // changes theme color to light pink
+  Settings::Instance().SetThemeName(tr("Clean Pink"));
+
+  // search first for a KAR Workshop file to get the ROMs and other tools
+
+  // verify it can find the Hack Pack
+
+  // get the latest Hack Pack gekko codes
+}
+
+// syncs this instance of KARphin with KAR Workshop
+void MainWindow::SyncKARphinInstanceWithKARWorkshop()
+{
+  //search for KAR Workshop
 }
 
 void MainWindow::ConnectHotkeys()
@@ -1261,10 +1290,10 @@ void MainWindow::ShowFreeLookWindow()
     m_freelook_window = new FreeLookWindow(this);
     InstallHotkeyFilter(m_freelook_window);
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-    connect(m_freelook_window, &FreeLookWindow::OpenAchievementSettings, this,
-            &MainWindow::ShowAchievementSettings);
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//    connect(m_freelook_window, &FreeLookWindow::OpenAchievementSettings, this,
+//            &MainWindow::ShowAchievementSettings);
+//#endif  // USE_RETRO_ACHIEVEMENTS
   }
 
   SetQWidgetWindowDecorations(m_freelook_window);
@@ -1506,27 +1535,6 @@ void MainWindow::BootWiiSystemMenu()
 
 void MainWindow::NetPlayInit()
 {
-  // forces dark mode
-  Settings::Instance().SetSystemDark(true);
-  Settings::Instance().ApplyStyle();
-
-  // init Steam
-  bool SteamInit = SteamAPI_Init();
-  SteamErrMsg errMsg;
-  SteamAPI_InitEx(&errMsg);
-
-  if (!SteamInit)
-  {
-    ModalMessageBox::critical(nullptr, tr("Netplay Error"), tr("Steam could not be initalized!"));
-
-    return;
-  }
-
-  // Initialize the peer to peer connection process.  This is not required, but we do it
-  // because we cannot accept connections until this initialization completes, and so we
-  // want to start it as soon as possible.
-  SteamNetworkingUtils()->InitRelayNetworkAccess();
-
   const auto& game_list_model = m_game_list->GetGameListModel();
   m_netplay_setup_dialog = new NetPlaySetupDialog(game_list_model, this);
   m_netplay_dialog = new NetPlayDialog(
@@ -1540,6 +1548,7 @@ void MainWindow::NetPlayInit()
 
   connect(m_netplay_dialog, &NetPlayDialog::Stop, this, &MainWindow::ForceStop);
   connect(m_netplay_dialog, &NetPlayDialog::rejected, this, &MainWindow::NetPlayQuit);
+  connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Join, this, &MainWindow::NetPlayJoin);
   connect(m_netplay_setup_dialog, &NetPlaySetupDialog::Host, this, &MainWindow::NetPlayHost);
 #ifdef USE_DISCORD_PRESENCE
   connect(m_netplay_discord, &DiscordHandler::Join, this, &MainWindow::NetPlayJoin);
@@ -1551,53 +1560,6 @@ void MainWindow::NetPlayInit()
           &MainWindow::UpdateScreenSaverInhibition);
   connect(&Settings::Instance(), &Settings::EmulationStateChanged, this,
           &MainWindow::UpdateScreenSaverInhibition);
-}
-
-bool waitForConnectionAttemptComplete = false;
-
-//the lobby enter callback
-void MainWindow::SteamCallbackFunc_OnLobbyEnter(LobbyEnter_t* callback, bool failed)
-{
-  auto server = Settings::Instance().GetNetPlayServer();
-
-  NetPlay::CustomBackend::KAR::Lobby lobby;
-  lobby.lobbyID = callback->m_ulSteamIDLobby;
-
-  // Settings
-
-  std::string host_ip;
-  u16 host_port;
-
-  //if we're the server, we just use local host
-  if (server)
-  {
-    host_ip = "127.0.0.1";
-    host_port = server->GetPort();
-  }
-
-  // if we're another client we must get the host code
-  else
-  {
-    // if we're another client, but we're running on the same machine as the host
-    // we just use the local host
-    if (SteamUser()->GetSteamID() == SteamMatchmaking()->GetLobbyOwner(callback->m_ulSteamIDLobby))
-    {
-      host_ip = "127.0.0.1";
-      lobby.Get_HostPort();
-      host_port = lobby.port; 
-    }
-
-    // if we're another client we must get the host code
-    else
-    {
-      lobby.Get_HostCode_IP();
-      host_ip = lobby.hostAddress_IP;
-      lobby.Get_HostPort();
-      host_port = lobby.port; 
-    }
-  }
-  
-  waitForConnectionAttemptComplete = false;
 }
 
 bool MainWindow::NetPlayJoin()
@@ -1616,28 +1578,11 @@ bool MainWindow::NetPlayJoin()
     return false;
   }
 
-  // if a name is too long
-  if (StringUTF8CodePointCount(Config::NETPLAY_USER_NICKNAME) > NETPLAY_NAME_LENGTH_MAX)
-  {
-    ModalMessageBox::critical(this, tr("Netplay Error"),
-                              tr("Name is too long, we can not let you play!"));
-    return false;
-  }
-
   auto server = Settings::Instance().GetNetPlayServer();
 
-  Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL = true;
-
- //joins the lobby specified
-  steamCallResult_OnLobbyEnter.Set(SteamMatchmaking()->JoinLobby(Config::NETPLAY_LOBBY_STEAM_ID),
-                                   this, &MainWindow::SteamCallbackFunc_OnLobbyEnter);
-
-  //wait till we fail or sussced at connecting
-  waitForConnectionAttemptComplete = true;
-  while (waitForConnectionAttemptComplete)
-  {
-    SteamAPI_RunCallbacks();
-  }
+  // Settings
+  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = traversal_choice == "traversal";
 
   std::string host_ip;
   u16 host_port;
@@ -1648,72 +1593,40 @@ bool MainWindow::NetPlayJoin()
   }
   else
   {
-    host_ip = Config::NETPLAY_LOBBY_HOST_CODE_OR_IP;
-    host_port = Config::NETPLAY_LOBBY_CONNECT_PORT; 
+    host_ip = is_traversal ? Config::Get(Config::NETPLAY_HOST_CODE) :
+                             Config::Get(Config::NETPLAY_ADDRESS);
+    host_port = Config::Get(Config::NETPLAY_CONNECT_PORT);
   }
 
-  const std::string traversal_host = Config::NETPLAY_LOBBY_HOST_CODE_OR_IP;
-  const u16 traversal_port = Config::NETPLAY_LOBBY_HOST_PORT;
-  const std::string nickname = Config::NETPLAY_USER_NICKNAME;
+  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const std::string nickname = Config::Get(Config::NETPLAY_NICKNAME);
   const std::string network_mode = Config::Get(Config::NETPLAY_NETWORK_MODE);
   const bool host_input_authority = network_mode == "hostinputauthority" || network_mode == "golf";
-
-  
 
   if (server)
   {
     server->SetHostInputAuthority(host_input_authority);
-    server->AdjustPadBufferSize(Config::NETPLAY_BUFFER_SIZE);
+    server->AdjustPadBufferSize(Config::Get(Config::NETPLAY_BUFFER_SIZE));
   }
 
   // Create Client
-  Settings::Instance().ResetNetPlayClient(new NetPlay::NetPlayClient(m_netplay_dialog));
-
-  // initalizes ENet
-  Settings::Instance().GetNetPlayClient()->InitalizationENet(
-      host_ip, host_port, nickname,
-      NetPlay::NetTraversalConfig{false, traversal_host,
-                                  traversal_port});
+  const bool is_hosting_netplay = server != nullptr;
+  Settings::Instance().ResetNetPlayClient(new NetPlay::NetPlayClient(
+      host_ip, host_port, m_netplay_dialog, nickname,
+      NetPlay::NetTraversalConfig{is_hosting_netplay ? false : is_traversal, traversal_host,
+                                  traversal_port}));
 
   if (!Settings::Instance().GetNetPlayClient()->IsConnected())
   {
-    ModalMessageBox::critical(this, tr("Netplay Error"),
-                              tr("Client failed to connect!"));
-
-    waitForConnectionAttemptComplete = false;
     NetPlayQuit();
     return false;
   }
 
   m_netplay_setup_dialog->close();
-  m_netplay_dialog->show(nickname, false);
+  m_netplay_dialog->show(nickname, is_traversal);
 
   return true;
-}
-
-bool waitForLobbyToFinishCooking = false;
-
-#include <steam/steamnetworkingfakeip.h>
-
-// the lobby create callback
-void MainWindow::SteamCallbackFunc_OnLobbyCreate(LobbyCreated_t* callback, bool failed)
-{
-  //creates the lobby
-  NetPlay::CustomBackend::KAR::Lobby lobby;
-  lobby.lobbyID = callback->m_ulSteamIDLobby;
-  Config::NETPLAY_LOBBY_STEAM_ID = lobby.lobbyID;
-  lobby.Set_Name(Config::NETPLAY_LOBBY_NAME);
-  lobby.Set_Region(Config::NETPLAY_LOBBY_REGION);
-
-  lobby.Set_GameCatagory(NetPlay::CustomBackend::KAR::GameCatagory::Ranked);
-  lobby.Set_GameMode(NetPlay::CustomBackend::KAR::GameMode::City_Trial);
-  lobby.Set_GameStatus(NetPlay::CustomBackend::KAR::GameStatus::Waiting);
-
-  lobby.Set_HostCode_IP(Config::NETPLAY_LOBBY_HOST_CODE_OR_IP);
-  lobby.Set_HostPort(Config::NETPLAY_LOBBY_HOST_PORT);
-  lobby.Set_NetworkMode(true);
-
-  waitForLobbyToFinishCooking = false;
 }
 
 bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
@@ -1732,41 +1645,25 @@ bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
     return false;
   }
 
-  // if a name is too long
-  if (StringUTF8CodePointCount(Config::NETPLAY_USER_NICKNAME) > NETPLAY_NAME_LENGTH_MAX)
-  {
-    ModalMessageBox::critical(this, tr("Netplay Error"),
-                              tr("Name is too long, we can not let you play!"));
-    return false;
-  }
-
   // Settings
-  Config::NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL = false;
+  u16 host_port = Config::Get(Config::NETPLAY_HOST_PORT);
+  const std::string traversal_choice = Config::Get(Config::NETPLAY_TRAVERSAL_CHOICE);
+  const bool is_traversal = traversal_choice == "traversal";
+  const bool use_upnp = Config::Get(Config::NETPLAY_USE_UPNP);
 
-  const bool use_upnp = Config::NETPLAY_LOBBY_USE_UPNP;
+  const std::string traversal_host = Config::Get(Config::NETPLAY_TRAVERSAL_SERVER);
+  const u16 traversal_port = Config::Get(Config::NETPLAY_TRAVERSAL_PORT);
+  const u16 traversal_port_alt = Config::Get(Config::NETPLAY_TRAVERSAL_PORT_ALT);
 
-  const std::string traversal_host =
-      Config::NETPLAY_LOBBY_HOST_CODE_OR_IP;
+  if (is_traversal)
+    host_port = Config::Get(Config::NETPLAY_LISTEN_PORT);
 
   // Create Server
-  Settings::Instance().ResetNetPlayServer(new NetPlay::NetPlayServer(m_netplay_dialog));
+  Settings::Instance().ResetNetPlayServer(
+      new NetPlay::NetPlayServer(host_port, use_upnp, m_netplay_dialog,
+                                 NetPlay::NetTraversalConfig{is_traversal, traversal_host,
+                                                             traversal_port, traversal_port_alt}));
 
-  //use Steam to generate a IP and port
-  SteamNetworkingSockets()->BeginAsyncRequestFakeIP(0);
-  SteamNetworkingFakeIPResult_t fakeData;
-  SteamNetworkingSockets()->GetFakeIP(0, &fakeData);
-  const u16 host_port = (*(u16*)&fakeData.m_unPorts);
-  const u16 traversal_port = host_port;
-  const u16 traversal_port_alt = host_port + 1;
-  Config::NETPLAY_LOBBY_HOST_PORT = traversal_port;
-
-  // initalizes ENet
-  Settings::Instance().GetNetPlayServer()->InitalizationENet(
-      host_port, use_upnp,
-      NetPlay::NetTraversalConfig{false, traversal_host, traversal_port,
-                                  traversal_port_alt});
-
-  //if failed
   if (!Settings::Instance().GetNetPlayServer()->is_connected)
   {
     ModalMessageBox::critical(
@@ -1775,22 +1672,6 @@ bool MainWindow::NetPlayHost(const UICommon::GameFile& game)
             .arg(host_port));
     NetPlayQuit();
     return false;
-  }
-
-  //store data
-  Config::NETPLAY_LOBBY_HOST_CODE_OR_IP =
-      Settings::Instance().GetNetPlayServer()->m_server->address.host;
-  Config::NETPLAY_LOBBY_HOST_PORT = Settings::Instance().GetNetPlayServer()->m_server->address.port;
-
-  //create a lobby with Steam
-  steamCallResult_OnLobbyCreate.Set(
-      SteamMatchmaking()->CreateLobby(ELobbyType::k_ELobbyTypePublic, 2), this,
-      &MainWindow::SteamCallbackFunc_OnLobbyCreate);
-
-  waitForLobbyToFinishCooking = true;
-  while (waitForLobbyToFinishCooking)
-  {
-    SteamAPI_RunCallbacks();
   }
 
   Settings::Instance().GetNetPlayServer()->ChangeGame(game.GetSyncIdentifier(),
@@ -1804,7 +1685,6 @@ void MainWindow::NetPlayQuit()
 {
   Settings::Instance().ResetNetPlayClient();
   Settings::Instance().ResetNetPlayServer();
-
 #ifdef USE_DISCORD_PRESENCE
   Discord::UpdateDiscordPresence();
 #endif
@@ -2145,26 +2025,26 @@ void MainWindow::OnConnectWiiRemote(int id)
   }
 }
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-void MainWindow::ShowAchievementsWindow()
-{
-  if (!m_achievements_window)
-  {
-    m_achievements_window = new AchievementsWindow(this);
-  }
-
-  SetQWidgetWindowDecorations(m_achievements_window);
-  m_achievements_window->show();
-  m_achievements_window->raise();
-  m_achievements_window->activateWindow();
-}
-
-void MainWindow::ShowAchievementSettings()
-{
-  ShowAchievementsWindow();
-  m_achievements_window->ForceSettingsTab();
-}
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//void MainWindow::ShowAchievementsWindow()
+//{
+//  if (!m_achievements_window)
+//  {
+//    m_achievements_window = new AchievementsWindow(this);
+//  }
+//
+//  SetQWidgetWindowDecorations(m_achievements_window);
+//  m_achievements_window->show();
+//  m_achievements_window->raise();
+//  m_achievements_window->activateWindow();
+//}
+//
+//void MainWindow::ShowAchievementSettings()
+//{
+//  ShowAchievementsWindow();
+//  m_achievements_window->ForceSettingsTab();
+//}
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
 void MainWindow::ShowMemcardManager()
 {
@@ -2205,10 +2085,10 @@ void MainWindow::ShowRiivolutionBootWidget(const UICommon::GameFile& game)
                           disc.volume->GetDiscNumber(), game.GetFilePath(), this);
   SetQWidgetWindowDecorations(&w);
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  connect(&w, &RiivolutionBootWidget::OpenAchievementSettings, this,
-          &MainWindow::ShowAchievementSettings);
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  connect(&w, &RiivolutionBootWidget::OpenAchievementSettings, this,
+//          &MainWindow::ShowAchievementSettings);
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   w.exec();
   if (!w.ShouldBoot())

@@ -13,8 +13,6 @@
 
 #include "Core/Boot/Boot.h"
 
-#include <steam/isteammatchmaking.h>
-
 class QMenu;
 class QStackedWidget;
 class QString;
@@ -85,14 +83,6 @@ public:
 
   bool eventFilter(QObject* object, QEvent* event) override;
   QMenu* createPopupMenu() override;
-
-  // the lobby enter callback
-  void SteamCallbackFunc_OnLobbyEnter(LobbyEnter_t* callback, bool failed);
-  CCallResult<MainWindow, LobbyEnter_t> steamCallResult_OnLobbyEnter;
-
-  // the lobby create callback
-  void SteamCallbackFunc_OnLobbyCreate(LobbyCreated_t* callback, bool failed);
-  CCallResult<MainWindow, LobbyCreated_t> steamCallResult_OnLobbyCreate;
 
 signals:
   void ReadOnlyModeChanged(bool read_only);
@@ -184,10 +174,10 @@ private:
   void ShowCheatsManager();
   void ShowRiivolutionBootWidget(const UICommon::GameFile& game);
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  void ShowAchievementsWindow();
-  void ShowAchievementSettings();
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  void ShowAchievementsWindow();
+//  void ShowAchievementSettings();
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   void NetPlayInit();
   bool NetPlayJoin();
@@ -223,6 +213,11 @@ private:
   void dragEnterEvent(QDragEnterEvent* event) override;
   void dropEvent(QDropEvent* event) override;
   QSize sizeHint() const override;
+
+   // preps the installation for KAR Netplay
+  void PrepInstallForKARNetplay();
+  // syncs this instance of KARphin with KAR Workshop
+  void SyncKARphinInstanceWithKARWorkshop();
 
 #ifdef _WIN32
   // This gets called for each event from the Windows message queue.
@@ -267,9 +262,9 @@ private:
   static constexpr int num_wii_controllers = 4;
   std::array<WiiTASInputWindow*, num_wii_controllers> m_wii_tas_input_windows{};
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  AchievementsWindow* m_achievements_window = nullptr;
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  AchievementsWindow* m_achievements_window = nullptr;
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   AssemblerWidget* m_assembler_widget;
   BreakpointWidget* m_breakpoint_widget;

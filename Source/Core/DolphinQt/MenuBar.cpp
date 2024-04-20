@@ -219,6 +219,39 @@ void MenuBar::AddFileMenu()
 
   file_menu->addSeparator();
 
+  //option for prep installing KAR
+
+  //checks if "portable.txt" is next to the program, if not, this will be marked as stage 1
+  //if (!std::filesystem::exists("portable.txt"))
+  //{
+  //  fileButton_ReadyForKARNetplay = file_menu->addAction(tr("Prep Install For KAR Netplay || Stage 1"), this,
+  //                                                       &MenuBar::PrepInstallForKARNetplay);
+  //  fileButton_ReadyForKARNetplay->setToolTip(
+  //      tr("KARphin will be formated for KAR Netplay action. Will NOT overwrite your global Dolphin settings."));
+  //}
+  //
+  ////if "portable.txt" is next to the program, this will be marked
+  //else
+  //{
+  //  fileButton_ReadyForKARNetplay = file_menu->addAction(
+  //      tr("Prep Install For KAR Netplay || Stage 2 || Final Part"), this, &MenuBar::PrepInstallForKARNetplay);
+  //  fileButton_ReadyForKARNetplay->setToolTip(
+  //      tr("KARphin will finish being formated for Netplay"));
+  //}
+
+  fileButton_ReadyForKARNetplay = file_menu->addAction(
+      tr("Prep Install For KAR Netplay"), this, &MenuBar::PrepInstallForKARNetplay);
+  fileButton_ReadyForKARNetplay->setToolTip(tr("KARphin will be formated for KAR Netplay action. "
+                                               "Will NOT overwrite your global Dolphin settings."));
+
+  file_menu->addSeparator();
+
+  //syncs your version of KARphin with your resources from KAR Workshop
+  fileButton_ReadyForKARNetplay = file_menu->addAction(tr("Sync With KAR Workshop"), this,
+                                                       &MenuBar::SyncKARphinInstanceWithKARWorkshop);
+
+  file_menu->addSeparator();
+
   m_exit_action = file_menu->addAction(tr("E&xit"), this, &MenuBar::Exit);
   m_exit_action->setShortcuts({QKeySequence::Quit, QKeySequence(Qt::ALT | Qt::Key_F4)});
 }
@@ -241,19 +274,19 @@ void MenuBar::AddToolsMenu()
 
   tools_menu->addSeparator();
 
-  tools_menu->addAction(tr("Host NetPlay"), this, &MenuBar::StartNetPlay);
-  tools_menu->addAction(tr("Browse &NetPlay Sessions"), this, &MenuBar::BrowseNetPlay);
+  tools_menu->addAction(tr("Start &NetPlay..."), this, &MenuBar::StartNetPlay);
+  tools_menu->addAction(tr("Browse &NetPlay Sessions...."), this, &MenuBar::BrowseNetPlay);
 
   tools_menu->addSeparator();
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  if (Config::Get(Config::RA_ENABLED))
-  {
-    tools_menu->addAction(tr("Achievements"), this, [this] { emit ShowAchievementsWindow(); });
-
-    tools_menu->addSeparator();
-  }
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  if (Config::Get(Config::RA_ENABLED))
+//  {
+//    tools_menu->addAction(tr("Achievements"), this, [this] { emit ShowAchievementsWindow(); });
+//
+//    tools_menu->addSeparator();
+//  }
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   QMenu* gc_ipl = tools_menu->addMenu(tr("Load GameCube Main Menu"));
 
@@ -595,29 +628,29 @@ void MenuBar::AddHelpMenu()
 {
   QMenu* help_menu = addMenu(tr("&Help"));
 
-  QAction* website = help_menu->addAction(tr("&Discord"));
+  QAction* website = help_menu->addAction(tr("&Website"));
   connect(website, &QAction::triggered, this,
-          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("http://discord.gg/p3rGrcr"))); });
- //QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
- //connect(documentation, &QAction::triggered, this, []() {
- //  QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
- //});
+          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/"))); });
+  QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
+  connect(documentation, &QAction::triggered, this, []() {
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
+  });
   QAction* github = help_menu->addAction(tr("&GitHub Repository"));
   connect(github, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/SeanMott/KARphin")));
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/dolphin-emu/dolphin")));
   });
-  //QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
-  //connect(bugtracker, &QAction::triggered, this, []() {
-  //  QDesktopServices::openUrl(
-  //      QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
-  //});
+  QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
+  connect(bugtracker, &QAction::triggered, this, []() {
+    QDesktopServices::openUrl(
+        QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
+  });
 
-  //if (AutoUpdateChecker::SystemSupportsAutoUpdates())
-  //{
-  //  help_menu->addSeparator();
-  //
-  //  help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
-  //}
+  if (AutoUpdateChecker::SystemSupportsAutoUpdates())
+  {
+    help_menu->addSeparator();
+
+    help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
+  }
 
 #ifndef __APPLE__
   help_menu->addSeparator();

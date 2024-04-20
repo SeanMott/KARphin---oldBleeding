@@ -57,6 +57,11 @@ signals:
   void EjectDisc();
   void OpenUserFolder();
 
+  //preps the installation for KAR Netplay
+  void PrepInstallForKARNetplay();
+  //syncs this instance of KARphin with KAR Workshop
+  void SyncKARphinInstanceWithKARWorkshop();
+
   // Emulation
   void Play();
   void Pause();
@@ -93,9 +98,9 @@ signals:
   void ShowInfinityBase();
   void ConnectWiiRemote(int id);
 
-#ifdef USE_RETRO_ACHIEVEMENTS
-  void ShowAchievementsWindow();
-#endif  // USE_RETRO_ACHIEVEMENTS
+//#ifdef USE_RETRO_ACHIEVEMENTS
+//  void ShowAchievementsWindow();
+//#endif  // USE_RETRO_ACHIEVEMENTS
 
   // Options
   void Configure();
@@ -197,6 +202,8 @@ private:
   QAction* m_eject_disc;
   QMenu* m_backup_menu;
   QAction* m_open_user_folder;
+  QAction* fileButton_ReadyForKARNetplay;
+  QAction* fileButton_SyncKARphinWithWorkshop;
 
   // Tools
   QAction* m_wad_install_action;

@@ -42,16 +42,9 @@ public:
   void SendChunkedToClients(sf::Packet&& packet, PlayerId skip_pid = 0,
                             const std::string& title = "");
 
-  NetPlayServer(NetPlayUI* dialog);
+  NetPlayServer(u16 port, bool forward_port, NetPlayUI* dialog,
+                const NetTraversalConfig& traversal_config);
   ~NetPlayServer();
-
-  //we push initalization of the networking stuff for ENet into it's own function.
-  //So we can do it another time after some after joining the lobby or starting the match
-  void InitalizationENet(u16 _port, bool _forward_port, const NetTraversalConfig& _traversal_config);
-
-  // we push DE-initalization of the networking stuff for ENet into it's own function.
-  // So we can do it another time after some after leaving the lobby or stoping netplay in general
-  void ShutdownENet();
 
   bool ChangeGame(const SyncIdentifier& sync_identifier, const std::string& netplay_name);
   bool ComputeGameDigest(const SyncIdentifier& sync_identifier);
@@ -63,9 +56,6 @@ public:
   bool StartGame();
   bool RequestStartGame();
   void AbortGameStart();
-
-  //initalizes a session/lobby
- // void CreateSession_Lobby(NetPlaySession session);
 
   PadMappingArray GetPadMapping() const;
   void SetPadMapping(const PadMappingArray& mappings);
@@ -88,7 +78,7 @@ public:
 
   bool is_connected = false;
 
-public:
+private:
   class Client
   {
   public:
@@ -163,7 +153,7 @@ public:
   void ChunkedDataSend(sf::Packet&& packet, PlayerId pid, const TargetMode target_mode);
   void ChunkedDataAbort();
 
-  //void SetupIndex();
+  void SetupIndex();
   bool PlayerHasControllerMapped(PlayerId pid) const;
 
   // pulled from OnConnect()
@@ -223,6 +213,6 @@ public:
   ENetHost* m_server = nullptr;
   Common::TraversalClient* m_traversal_client = nullptr;
   NetPlayUI* m_dialog = nullptr;
- // NetPlayIndex m_index;
+  NetPlayIndex m_index;
 };
 }  // namespace NetPlay

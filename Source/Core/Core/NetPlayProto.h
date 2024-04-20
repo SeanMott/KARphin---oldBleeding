@@ -15,9 +15,6 @@
 #include "Core/HW/Sram.h"
 #include "VideoCommon/VideoConfig.h"
 
-#include <steam/isteammatchmaking.h>
-#include <steam/steam_api.h>
-
 namespace DiscIO
 {
 enum class Region;

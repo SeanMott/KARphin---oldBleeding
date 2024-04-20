@@ -114,17 +114,9 @@ public:
   void ThreadFunc();
   void SendAsync(sf::Packet&& packet, u8 channel_id = DEFAULT_CHANNEL);
 
-  NetPlayClient(NetPlayUI* dialog);
+  NetPlayClient(const std::string& address, const u16 port, NetPlayUI* dialog,
+                const std::string& name, const NetTraversalConfig& traversal_config);
   ~NetPlayClient();
-
-  // we push initalization of the networking stuff for ENet into it's own function.
-  // So we can do it another time after some after joining the lobby or starting the match
-  void InitalizationENet(const std::string& _address, const u16 _port, const std::string& _name,
-                         const NetTraversalConfig& _traversal_config);
-
-  // we push DE-initalization of the networking stuff for ENet into it's own function.
-  // So we can do it another time after some after leaving the lobby or stoping netplay in general
-  void ShutdownENet();
 
   std::vector<const Player*> GetPlayers();
   const NetSettings& GetNetSettings() const;

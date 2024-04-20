@@ -34,5 +34,3 @@ using DT = Clock::duration;
 using DT_us = std::chrono::duration<double, std::micro>;
 using DT_ms = std::chrono::duration<double, std::milli>;
 using DT_s = std::chrono::duration<double, std::ratio<1>>;
-
-#define NETPLAY_NAME_LENGTH_MAX 30U

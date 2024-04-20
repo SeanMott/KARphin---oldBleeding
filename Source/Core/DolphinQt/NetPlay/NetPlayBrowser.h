@@ -15,8 +15,6 @@
 #include "Common/Flag.h"
 #include "UICommon/NetPlayIndex.h"
 
-#include <Core/CustomNetplayBackend/KARLobby.hpp>
-
 class QCheckBox;
 class QComboBox;
 class QDialogButtonBox;
@@ -33,17 +31,11 @@ public:
   explicit NetPlayBrowser(QWidget* parent = nullptr);
   ~NetPlayBrowser();
 
-  //steam callback result for lobbies
-  CCallResult<NetPlayBrowser, LobbyMatchList_t> steamCallResult_LobbyListRequest;
-
-  //steam callback funcs for lobbies
-  void SteamCallbackFunc_steamCallResult_LobbyListRequest(LobbyMatchList_t* callback, bool fail);
-
   void accept() override;
 signals:
   void Join();
   void UpdateStatusRequested(const QString& status);
-  void UpdateListRequested(std::vector<NetPlay::CustomBackend::KAR::Lobby> sessions);
+  void UpdateListRequested(std::vector<NetPlaySession> sessions);
 
 private:
   void CreateWidgets();
@@ -56,7 +48,7 @@ private:
   void OnSelectionChanged();
 
   void OnUpdateStatusRequested(const QString& status);
-  void OnUpdateListRequested(std::vector<NetPlay::CustomBackend::KAR::Lobby> sessions);
+  void OnUpdateListRequested(std::vector<NetPlaySession> sessions);
 
   void SaveSettings() const;
   void RestoreSettings();
@@ -75,7 +67,7 @@ private:
   QRadioButton* m_radio_private;
   QRadioButton* m_radio_public;
 
-  std::vector<NetPlay::CustomBackend::KAR::Lobby> m_sessions;
+  std::vector<NetPlaySession> m_sessions;
 
   std::thread m_refresh_thread;
   std::optional<std::map<std::string, std::string>> m_refresh_filters;
@@ -84,4 +76,4 @@ private:
   Common::Event m_refresh_event;
 };
 
-Q_DECLARE_METATYPE(std::vector<NetPlay::CustomBackend::KAR::Lobby>)
+Q_DECLARE_METATYPE(std::vector<NetPlaySession>)

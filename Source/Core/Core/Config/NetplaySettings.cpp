@@ -5,8 +5,6 @@
 
 #include "Common/Config/Config.h"
 
-
-
 namespace Config
 {
 static constexpr u16 DEFAULT_LISTEN_PORT = 2626;
@@ -15,63 +13,38 @@ static constexpr u16 DEFAULT_LISTEN_PORT = 2626;
 
 // Main.NetPlay
 
-//CSteamID NETPLAY_LOBBY_STEAM_ID;
-//
-//const Info<std::string> NETPLAY_TRAVERSAL_SERVER{{System::Main, "NetPlay", "TraversalServer"},
-//                                                 "stun.dolphin-emu.org"};
-//const Info<u16> NETPLAY_TRAVERSAL_PORT{{System::Main, "NetPlay", "TraversalPort"}, 6262};
-//const Info<u16> NETPLAY_TRAVERSAL_PORT_ALT{{System::Main, "NetPlay", "TraversalPortAlt"}, 6226};
-//const Info<std::string> NETPLAY_TRAVERSAL_CHOICE{{System::Main, "NetPlay", "TraversalChoice"},
-//                                                 "direct"};
-//const Info<std::string> NETPLAY_INDEX_URL{{System::Main, "NetPlay", "IndexServer"},
-//                                          "https://lobby.dolphin-emu.org"};
-//
-//const Info<bool> NETPLAY_USE_INDEX{{System::Main, "NetPlay", "UseIndex"}, false};
-//const Info<std::string> NETPLAY_INDEX_NAME{{System::Main, "NetPlay", "IndexName"}, ""};
-//const Info<std::string> NETPLAY_INDEX_REGION{{System::Main, "NetPlay", "IndexRegion"}, ""};
-//const Info<std::string> NETPLAY_INDEX_PASSWORD{{System::Main, "NetPlay", "IndexPassword"}, ""};
-//
-//const Info<std::string> NETPLAY_HOST_CODE{{System::Main, "NetPlay", "HostCode"}, "00000000"};
-//
-//const Info<u16> NETPLAY_HOST_PORT{{System::Main, "NetPlay", "HostPort"}, DEFAULT_LISTEN_PORT};
-//const Info<std::string> NETPLAY_ADDRESS{{System::Main, "NetPlay", "Address"}, "127.0.0.1"};
-//const Info<u16> NETPLAY_CONNECT_PORT{{System::Main, "NetPlay", "ConnectPort"}, DEFAULT_LISTEN_PORT};
-//const Info<u16> NETPLAY_LISTEN_PORT{{System::Main, "NetPlay", "ListenPort"}, DEFAULT_LISTEN_PORT};
-//
-//const Info<std::string> NETPLAY_NICKNAME{{System::Main, "NetPlay", "Nickname"}, "Player"};
-//const Info<bool> NETPLAY_USE_UPNP{{System::Main, "NetPlay", "UseUPNP"}, false};
-//
-//const Info<bool> NETPLAY_ENABLE_QOS{{System::Main, "NetPlay", "EnableQoS"}, true};
-//
-//const Info<bool> NETPLAY_ENABLE_CHUNKED_UPLOAD_LIMIT{
-//    {System::Main, "NetPlay", "EnableChunkedUploadLimit"}, false};
-//const Info<u32> NETPLAY_CHUNKED_UPLOAD_LIMIT{{System::Main, "NetPlay", "ChunkedUploadLimit"}, 3000};
-//
-//const Info<u32> NETPLAY_BUFFER_SIZE{{System::Main, "NetPlay", "BufferSize"}, 5};
-//const Info<u32> NETPLAY_CLIENT_BUFFER_SIZE{{System::Main, "NetPlay", "BufferSizeClient"}, 1};
+const Info<std::string> NETPLAY_TRAVERSAL_SERVER{{System::Main, "NetPlay", "TraversalServer"},
+                                                 "stun.dolphin-emu.org"};
+const Info<u16> NETPLAY_TRAVERSAL_PORT{{System::Main, "NetPlay", "TraversalPort"}, 6262};
+const Info<u16> NETPLAY_TRAVERSAL_PORT_ALT{{System::Main, "NetPlay", "TraversalPortAlt"}, 6226};
+const Info<std::string> NETPLAY_TRAVERSAL_CHOICE{{System::Main, "NetPlay", "TraversalChoice"},
+                                                 "direct"};
+const Info<std::string> NETPLAY_INDEX_URL{{System::Main, "NetPlay", "IndexServer"},
+                                          "https://lobby.dolphin-emu.org"};
 
- CSteamID NETPLAY_LOBBY_STEAM_ID;
- std::string NETPLAY_LOBBY_NAME;
- std::string NETPLAY_LOBBY_REGION;
+const Info<bool> NETPLAY_USE_INDEX{{System::Main, "NetPlay", "UseIndex"}, false};
+const Info<std::string> NETPLAY_INDEX_NAME{{System::Main, "NetPlay", "IndexName"}, ""};
+const Info<std::string> NETPLAY_INDEX_REGION{{System::Main, "NetPlay", "IndexRegion"}, ""};
+const Info<std::string> NETPLAY_INDEX_PASSWORD{{System::Main, "NetPlay", "IndexPassword"}, ""};
 
- bool NETPLAY_LOBBY_HAS_PASSWORD;
- std::string NETPLAY_LOBBY_PASSWORD;
+const Info<std::string> NETPLAY_HOST_CODE{{System::Main, "NetPlay", "HostCode"}, "00000000"};
 
- bool NETPLAY_LOBBY_IS_DIRECT_OR_TRAVERSAL;
- bool NETPLAY_LOBBY_USE_UPNP;
- bool NETPLAY_LOBBY_ENABLE_QOS;
+const Info<u16> NETPLAY_HOST_PORT{{System::Main, "NetPlay", "HostPort"}, DEFAULT_LISTEN_PORT};
+const Info<std::string> NETPLAY_ADDRESS{{System::Main, "NetPlay", "Address"}, "127.0.0.1"};
+const Info<u16> NETPLAY_CONNECT_PORT{{System::Main, "NetPlay", "ConnectPort"}, DEFAULT_LISTEN_PORT};
+const Info<u16> NETPLAY_LISTEN_PORT{{System::Main, "NetPlay", "ListenPort"}, DEFAULT_LISTEN_PORT};
 
- u16 NETPLAY_LOBBY_HOST_PORT;
- u16 NETPLAY_LOBBY_CONNECT_PORT;
- std::string NETPLAY_LOBBY_HOST_CODE_OR_IP;
+const Info<std::string> NETPLAY_NICKNAME{{System::Main, "NetPlay", "Nickname"}, "Player"};
+const Info<bool> NETPLAY_USE_UPNP{{System::Main, "NetPlay", "UseUPNP"}, false};
 
- bool NETPLAY_ENABLE_CHUNKED_UPLOAD_LIMIT;
- u32 NETPLAY_CHUNKED_UPLOAD_LIMIT;
+const Info<bool> NETPLAY_ENABLE_QOS{{System::Main, "NetPlay", "EnableQoS"}, true};
 
- u32 NETPLAY_BUFFER_SIZE;
- u32 NETPLAY_CLIENT_BUFFER_SIZE;
+const Info<bool> NETPLAY_ENABLE_CHUNKED_UPLOAD_LIMIT{
+    {System::Main, "NetPlay", "EnableChunkedUploadLimit"}, false};
+const Info<u32> NETPLAY_CHUNKED_UPLOAD_LIMIT{{System::Main, "NetPlay", "ChunkedUploadLimit"}, 3000};
 
- std::string NETPLAY_USER_NICKNAME;
+const Info<u32> NETPLAY_BUFFER_SIZE{{System::Main, "NetPlay", "BufferSize"}, 5};
+const Info<u32> NETPLAY_CLIENT_BUFFER_SIZE{{System::Main, "NetPlay", "BufferSizeClient"}, 1};
 
 const Info<bool> NETPLAY_SAVEDATA_LOAD{{System::Main, "NetPlay", "SyncSaves"}, true};
 const Info<bool> NETPLAY_SAVEDATA_WRITE{{System::Main, "NetPlay", "WriteSaveData"}, true};

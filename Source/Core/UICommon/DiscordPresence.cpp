@@ -54,13 +54,13 @@ void HandleDiscordJoin(const char* join_secret)
   if (event_handler == nullptr)
     return;
 
-  //if (Config::Get(Config::NETPLAY_NICKNAME) == Config::NETPLAY_NICKNAME.GetDefaultValue())
-  //  Config::SetCurrent(Config::NETPLAY_NICKNAME, username);
+  if (Config::Get(Config::NETPLAY_NICKNAME) == Config::NETPLAY_NICKNAME.GetDefaultValue())
+    Config::SetCurrent(Config::NETPLAY_NICKNAME, username);
 
   std::string secret(join_secret);
 
   std::string type = secret.substr(0, secret.find('\n'));
-  //size_t offset = type.length() + 1;
+  size_t offset = type.length() + 1;
 
   switch (static_cast<SecretType>(std::stol(type)))
   {
@@ -71,22 +71,22 @@ void HandleDiscordJoin(const char* join_secret)
   case SecretType::IPAddress:
   {
     // SetBaseOrCurrent will save the ip address, which isn't what's wanted in this situation
-   // Config::SetCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, "direct");
-   //
-   // std::string host = secret.substr(offset, secret.find_last_of(':') - offset);
-   // Config::SetCurrent(Config::NETPLAY_ADDRESS, host);
-   //
-   // offset += host.length();
-   // if (secret[offset] == ':')
-   //   Config::SetCurrent(Config::NETPLAY_CONNECT_PORT, std::stoul(secret.substr(offset + 1)));
+    Config::SetCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, "direct");
+
+    std::string host = secret.substr(offset, secret.find_last_of(':') - offset);
+    Config::SetCurrent(Config::NETPLAY_ADDRESS, host);
+
+    offset += host.length();
+    if (secret[offset] == ':')
+      Config::SetCurrent(Config::NETPLAY_CONNECT_PORT, std::stoul(secret.substr(offset + 1)));
   }
   break;
 
   case SecretType::RoomID:
   {
-   // Config::SetCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, "traversal");
+    Config::SetCurrent(Config::NETPLAY_TRAVERSAL_CHOICE, "traversal");
 
-   // Config::SetCurrent(Config::NETPLAY_HOST_CODE, secret.substr(offset));
+    Config::SetCurrent(Config::NETPLAY_HOST_CODE, secret.substr(offset));
   }
   break;
   }
