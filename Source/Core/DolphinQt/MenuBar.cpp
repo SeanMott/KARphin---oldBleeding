@@ -239,6 +239,7 @@ void MenuBar::AddFileMenu()
   //      tr("KARphin will finish being formated for Netplay"));
   //}
 
+  //menu item for fixing this install and gathering the updated codes
   fileButton_ReadyForKARNetplay = file_menu->addAction(
       tr("Prep Install For KAR Netplay"), this, &MenuBar::PrepInstallForKARNetplay);
   fileButton_ReadyForKARNetplay->setToolTip(tr("KARphin will be formated for KAR Netplay action. "
@@ -630,27 +631,27 @@ void MenuBar::AddHelpMenu()
 
   QAction* website = help_menu->addAction(tr("&Website"));
   connect(website, &QAction::triggered, this,
-          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/"))); });
-  QAction* documentation = help_menu->addAction(tr("Online &Documentation"));
+          []() { QDesktopServices::openUrl(QUrl(QStringLiteral("https://www.kirbyairrideonline.com/home"))); });
+  QAction* documentation = help_menu->addAction(tr("Discord"));
   connect(documentation, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://dolphin-emu.org/docs/guides")));
+    QDesktopServices::openUrl(QUrl(QStringLiteral("http://discord.gg/p3rGrcr")));
   });
   QAction* github = help_menu->addAction(tr("&GitHub Repository"));
   connect(github, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/dolphin-emu/dolphin")));
+    QDesktopServices::openUrl(QUrl(QStringLiteral("https://github.com/SeanMott/KARphin")));
   });
-  QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
-  connect(bugtracker, &QAction::triggered, this, []() {
-    QDesktopServices::openUrl(
-        QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
-  });
+  //QAction* bugtracker = help_menu->addAction(tr("&Bug Tracker"));
+  //connect(bugtracker, &QAction::triggered, this, []() {
+  //  QDesktopServices::openUrl(
+  //      QUrl(QStringLiteral("https://bugs.dolphin-emu.org/projects/emulator")));
+  //});
 
-  if (AutoUpdateChecker::SystemSupportsAutoUpdates())
-  {
-    help_menu->addSeparator();
-
-    help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
-  }
+ // if (AutoUpdateChecker::SystemSupportsAutoUpdates())
+ // {
+ //   help_menu->addSeparator();
+ //
+ //   help_menu->addAction(tr("&Check for Updates..."), this, &MenuBar::InstallUpdateManually);
+ // }
 
 #ifndef __APPLE__
   help_menu->addSeparator();
