@@ -47,7 +47,7 @@ If you downloaded KARphin and don't have a KAR Workshop instance. KARphin will s
 
 ![Image](../Images/NetplaySetup/NP_Step2_KARphinReady.png)
 
-Congrats, your instance of KARphin is all ready to go. From here, if your Hack Pack ROM is visable. You can move onto either [Hosting/Joining a game](PlayingNetplay.md), or [Importing Your Settings From Slippie](https://github.com/SeanMott/KARphin/tree/master?tab=readme-ov-file#but-my-controller-settings). If you used the old Dolphin build.
+Congrats, your instance of KARphin is all ready to go. From here, if your Hack Pack ROM is visable. You can move onto either [Hosting/Joining a game](PlayingNetplay.md), or [Importing Your Settings From Slippie](ImportingSlippieSettings.md). If you used the old Dolphin build.
 
 If your ROM <b>DID NOT</b> appear in the main menu after going through the Prep Netplay prompt. Stay here, we'll get you fixed up.
 
@@ -69,4 +69,4 @@ We don't care about anything else except for <b>Game Folders</b>. This is a list
 
 You will be prompted to select a directory, simply navagate to the folder containing the Kirby Air Ride Hack Pack ISO and press Select Folder. After closing the Settings window, the Hack Pack ROM should be in the main menu.
 
-From here you are all ready to get started, move to either [Hosting/Joining a game](PlayingNetplay.md), or [Importing Your Settings From Slippie](https://github.com/SeanMott/KARphin/tree/master?tab=readme-ov-file#but-my-controller-settings).
+From here you are all ready to get started, move to either [Hosting/Joining a game](PlayingNetplay.md), or [Importing Your Settings From Slippie](ImportingSlippieSettings.md).
