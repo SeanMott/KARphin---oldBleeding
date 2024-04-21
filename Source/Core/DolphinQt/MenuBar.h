@@ -227,7 +227,7 @@ private:
   //Networking
 
   // Tools
-  QAction* m_wad_install_action;
+ QAction* m_wad_install_action;
   QMenu* m_perform_online_update_menu;
   QAction* m_perform_online_update_for_current_region;
   QAction* m_ntscj_ipl;
