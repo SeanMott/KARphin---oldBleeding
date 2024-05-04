@@ -2,6 +2,8 @@
 
 [Netplay Website](https://www.kirbyairrideonline.com/) | [Netplay Discord](http://discord.gg/p3rGrcr) | [Wiki](https://kar.miraheze.org/wiki/Main_Page) | [KAR Workshop]()
 
+NO LONGER MAINTAINED, ALL WORK FROM LEGACY KARPHIN AND BLEEDING HAS BEEN MERGED INTO [REAL KARPHIN]([SeanMott/WarpStar](https://github.com/SeanMott/KARphin))
+
 KARphin is an emulator for running Kirby Air Ride Netplay on Windows,
 Linux, macOS, and Android. It's licensed under the terms
 of the GNU General Public License, version 2 or later (GPLv2+).
